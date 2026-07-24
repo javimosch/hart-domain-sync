@@ -109,7 +109,7 @@ http:
         servers:
           - url: "$SERVICE_URL"
 YAML
-  if ! cmp -s "$tmp" "$f" 2>/dev/null; then mv "$tmp" "$f"; log "router: $PREFIX$s.yml written ($d)"; else rm -f "$tmp"; fi
+  if ! cmp -s "$tmp" "$f" 2>/dev/null; then mv "$tmp" "$f"; chmod 644 "$f"; log "router: $PREFIX$s.yml written ($d)"; else rm -f "$tmp"; fi
   if [ "$MANAGE_DNS" = "1" ]; then
     z="$(zone_for "$d")"
     if [ -n "$z" ]; then cf_upsert_a "$d" "$z"
