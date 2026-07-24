@@ -91,13 +91,26 @@ cf_upsert() { # cf_upsert <fqdn> <zone> <type> <content>
   fi
 }
 
-# --- 3. write per-domain router files + DNS ---
+# --- 3. per domain: DNS FIRST (so it can propagate), then the router file ---
+# Traefik hot-loads a new router file the instant it appears and attempts ACME immediately; if DNS
+# hasn't propagated yet that first attempt fails and Traefik backs off. So we set DNS before writing
+# the file, and if any brand-NEW router file was created we force one Traefik restart at the end
+# (after a short propagation wait) to trigger a clean ACME retry. Established domains never restart.
 declare -A WANT=()
+NEW=0
 for d in "${DOMAINS[@]}"; do
   [ -n "$d" ] || continue
   s="$(slug "$d")"
   WANT["$PREFIX$s.yml"]=1
   f="$DEST/$PREFIX$s.yml"
+  if [ "$MANAGE_DNS" = "1" ]; then
+    z="$(zone_for "$d")"
+    if [ -n "$z" ]; then
+      cf_upsert "$d" "$z" A "$BOX_IP"
+      [ -n "$BOX_IP6" ] && cf_upsert "$d" "$z" AAAA "$BOX_IP6"
+    else log "DNS: $d is not under one of your zones — create 'A $d -> $BOX_IP' at the domain's registrar"; fi
+  fi
+  existed=0; [ -e "$f" ] && existed=1
   tmp="$(mktemp)"
   cat > "$tmp" <<YAML
 # managed by hart-domain-sync — regenerated, do not edit. domain: $d
@@ -115,14 +128,7 @@ http:
         servers:
           - url: "$SERVICE_URL"
 YAML
-  if ! cmp -s "$tmp" "$f" 2>/dev/null; then mv "$tmp" "$f"; chmod 644 "$f"; log "router: $PREFIX$s.yml written ($d)"; else rm -f "$tmp"; fi
-  if [ "$MANAGE_DNS" = "1" ]; then
-    z="$(zone_for "$d")"
-    if [ -n "$z" ]; then
-      cf_upsert "$d" "$z" A "$BOX_IP"
-      [ -n "$BOX_IP6" ] && cf_upsert "$d" "$z" AAAA "$BOX_IP6"
-    else log "DNS: $d is not under one of your zones — create 'A $d -> $BOX_IP' at the domain's registrar"; fi
-  fi
+  if ! cmp -s "$tmp" "$f" 2>/dev/null; then mv "$tmp" "$f"; chmod 644 "$f"; log "router: $PREFIX$s.yml written ($d)"; [ "$existed" = 0 ] && NEW=1; else rm -f "$tmp"; fi
 done
 
 # --- 4. prune orphaned router files (reached only after a successful hart fetch) ---
@@ -133,5 +139,16 @@ for f in "$DEST/$PREFIX"*.yml; do
   if [ -z "${WANT[$b]:-}" ]; then rm -f "$f"; log "pruned: $b (mapping removed)"; fi
 done
 shopt -u nullglob
+
+# --- 5. new domain(s) -> force one clean ACME attempt (DNS has been set + given time to propagate) ---
+if [ "$NEW" = 1 ]; then
+  log "new domain(s) added — waiting ${PROPAGATE_WAIT:-10}s for DNS, then restarting Traefik for ACME"
+  sleep "${PROPAGATE_WAIT:-10}"
+  if sudo -n systemctl restart traefik 2>/dev/null; then
+    log "traefik restarted — cert(s) will issue on the retry"
+  else
+    log "WARN: could not restart traefik (needs passwordless sudo) — new cert issues on the next restart"
+  fi
+fi
 
 log "reconcile complete: ${#DOMAINS[@]} domain(s)"

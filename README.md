@@ -38,6 +38,7 @@ zones. Never edits other Traefik files, never deletes DNS.
 | `CERT_RESOLVER` | `letsencrypt` | Traefik cert resolver (HTTP-01 on dk1) |
 | `CF_ENV` | `/etc/traefik/cloudflare.env` | source of `CF_API_EMAIL`/`CF_API_KEY` |
 | `MANAGE_DNS` | `1` | set `0` to disable CF DNS entirely |
+| `PROPAGATE_WAIT` | `10` | seconds to wait for DNS before the new-domain Traefik restart |
 
 Override on dk1 via `/etc/hart/domain-sync.env` (read by the systemd unit).
 
@@ -72,5 +73,11 @@ Fix: set **`BOX_IP6`** to the box's public IPv6 so the reconciler also writes an
 both stacks. Requires the box to have public IPv6 and Traefik to listen on it (it binds `*:80/:443`
 = dual-stack by default). On dk1: `BOX_IP6=2a0f:f01:206:1b3::` (in `/etc/hart/domain-sync.env`).
 
-Also note: newly-mapped domains can land while Traefik is in ACME **back-off** from an earlier failed
-attempt (e.g. before the AAAA existed). `sudo systemctl restart traefik` forces an immediate retry.
+### ACME race on new domains (handled automatically)
+
+Traefik hot-loads a new `hart-*.yml` router the instant it appears and attempts ACME **immediately** —
+often before the just-created DNS has propagated, so that first attempt validates against the stale
+answer (the proxied wildcard's Cloudflare IP) and Traefik backs off. The reconciler handles this: it
+sets DNS **first**, and when a brand-new router file is created it waits `PROPAGATE_WAIT` seconds then
+runs `sudo systemctl restart traefik` once to force a clean ACME retry with the correct DNS. Steady-state
+reconciles (no new domains) never restart. Needs passwordless sudo for the `dk1` user (present on dk1).
