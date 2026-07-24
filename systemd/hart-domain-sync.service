@@ -5,7 +5,9 @@ Wants=network-online.target
 
 [Service]
 Type=oneshot
-User=dk1
-# Optional overrides (BOX_IP, ENTRYPOINT, CERT_RESOLVER, MANAGE_DNS, CF_ENV, DEST, HART_URL):
+# Adjust for your host: a user that owns the Traefik watched dir (DEST) and can read CF_ENV.
+User=hart
+# Host-specific settings (REQUIRED: BOX_IP; optional: BOX_IP6, ENTRYPOINT, CERT_RESOLVER, MANAGE_DNS,
+# CF_ENV, DEST, SERVICE_URL, HART_URL, PROPAGATE_WAIT):
 EnvironmentFile=-/etc/hart/domain-sync.env
 ExecStart=/opt/hart/hart-domain-sync.sh

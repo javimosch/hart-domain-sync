@@ -3,21 +3,24 @@
 Reconciles [hart](https://github.com/javimosch/machin-hart)'s custom-domain mappings into
 **Traefik** dynamic config + **Cloudflare** DNS. hart owns the mapping (its `domains` table,
 served at `GET /v1/domain`); this turns that desired set into a live proxy + DNS. Separate from
-hart on purpose — provisioning stays out of the app (issue machin-hart#16).
+hart on purpose — provisioning stays out of the app (issue machin-hart#16). It consumes hart's
+`HART_DOMAIN_HOOK` and/or runs on a timer.
 
 ## What it does (each run)
 
 1. Reads the desired domain set from `GET $HART_URL/v1/domain`.
-2. Writes one Traefik file per domain — `$DEST/hart-<slug>.yml` (a `Host()` router → hart's local
+2. For a domain under one of **your own Cloudflare zones** (the whitelist, fetched live each run),
+   upserts an `A → $BOX_IP` (and `AAAA → $BOX_IP6`, if set) grey-cloud record. Domains outside your
+   zones are logged for the creator to point their own DNS.
+3. Writes one Traefik file per domain — `$DEST/hart-<slug>.yml` (a `Host()` router → hart's local
    port, TLS via your cert resolver) in a **watched directory** (hot-reload).
-3. For a domain under one of **your own Cloudflare zones** (the whitelist, fetched live each run),
-   upserts an `A → $BOX_IP` record (grey-cloud). Domains outside your zones are logged for the
-   creator to point themselves.
-4. Prunes `hart-*.yml` files whose mapping was removed — **only after a successful hart fetch**
+4. If a brand-new domain was added, waits `PROPAGATE_WAIT`s then restarts Traefik once to force a
+   clean ACME attempt (see the race note below). Steady-state runs never restart.
+5. Prunes `hart-*.yml` files whose mapping was removed — **only after a successful hart fetch**
    (never wipes on an outage). DNS records are left in place on unmap (non-destructive).
 
-**Additive & safe:** only ever touches files named `hart-*.yml` in `$DEST` and A-records under your
-zones. Never edits other Traefik files, never deletes DNS.
+**Additive & safe:** only ever touches files named `hart-*.yml` in `$DEST` and A/AAAA records under
+your own zones. Never edits other Traefik files, never deletes DNS.
 
 ## Triggers
 
@@ -25,59 +28,66 @@ zones. Never edits other Traefik files, never deletes DNS.
   instant a domain is mapped/unmapped (returns immediately, doesn't block the HTTP response).
 - **`hart-domain-sync.timer`** — every 5 min; self-heals missed hooks, manual DB edits, restarts.
 
-## Config (env, all optional — sane dk1 defaults)
+## Config
+
+Set host-specific values in a config file (default `/etc/hart/domain-sync.env`, also loaded by the
+systemd unit). The built-in defaults are **generic conventions, not host addresses** — you must at
+least set `BOX_IP`.
 
 | var | default | |
 |---|---|---|
+| `BOX_IP` | *(required for DNS)* | this box's public **IPv4** (A-record target) |
+| `BOX_IP6` | *(empty)* | this box's public **IPv6** (AAAA target) — **required if your zone has a proxied wildcard**, see below |
 | `HART_URL` | `http://127.0.0.1:8799` | hart daemon |
-| `DEST` | `/etc/traefik/dynamic.d` | Traefik watched dir |
-| `BOX_IP` | `92.113.145.178` | A-record target (IPv4) |
-| `BOX_IP6` | *(empty)* | AAAA-record target (IPv6). **Set this if your zone has a proxied wildcard** — see gotcha below |
-| `SERVICE_URL` | `http://127.0.0.1:8799` | Traefik → hart backend |
-| `ENTRYPOINT` | `websecure` | Traefik TLS entrypoint |
-| `CERT_RESOLVER` | `letsencrypt` | Traefik cert resolver (HTTP-01 on dk1) |
-| `CF_ENV` | `/etc/traefik/cloudflare.env` | source of `CF_API_EMAIL`/`CF_API_KEY` |
-| `MANAGE_DNS` | `1` | set `0` to disable CF DNS entirely |
+| `DEST` | `/etc/traefik/dynamic.d` | Traefik watched directory |
+| `SERVICE_URL` | `http://127.0.0.1:8799` | how Traefik reaches hart |
+| `ENTRYPOINT` | `websecure` | Traefik TLS entrypoint name |
+| `CERT_RESOLVER` | `letsencrypt` | Traefik cert resolver name |
+| `CF_ENV` | `/etc/traefik/cloudflare.env` | file holding `CF_API_EMAIL` + `CF_API_KEY` (Cloudflare global key) |
+| `MANAGE_DNS` | `1` | `0` = don't touch Cloudflare DNS at all |
 | `PROPAGATE_WAIT` | `10` | seconds to wait for DNS before the new-domain Traefik restart |
 
-Override on dk1 via `/etc/hart/domain-sync.env` (read by the systemd unit).
+## Prerequisites
 
-## Prerequisite: Traefik directory provider
+- **Traefik directory provider**: Traefik must watch `$DEST` (`providers.file.directory`). If you run
+  a single-file provider today, migrate additively — create the dir, symlink your existing dynamic
+  file into it, and repoint the provider (nothing in the existing file changes).
+- **Cloudflare global key** in `$CF_ENV` as `CF_API_EMAIL` + `CF_API_KEY` (the same file Traefik's
+  DNS challenge uses, if you have one).
+- **Passwordless sudo** for the runner user (only used to `systemctl restart traefik` on new domains).
+- `curl` + `jq` on the host. Traefik cert resolver reachable (HTTP-01 works for arbitrary domains
+  once DNS points at the box).
 
-Traefik must watch `$DEST`. On dk1 (single-file provider today) this is a one-time additive
-migration — see the deploy notes; the existing `dynamic.yml` is symlinked in untouched and only the
-provider pointer changes.
-
-## Install (dk1)
+## Install
 
 ```sh
-scp hart-domain-sync.sh hart-domain-hook.sh dk1:/opt/hart/
-ssh dk1 'chmod +x /opt/hart/hart-domain-sync.sh /opt/hart/hart-domain-hook.sh'
-scp systemd/* dk1:/tmp/ && ssh dk1 'sudo mv /tmp/hart-domain-sync.{service,timer} /etc/systemd/system/ && sudo systemctl daemon-reload'
-# set HART_DOMAIN_HOOK=/opt/hart/hart-domain-hook.sh in /etc/hart/hart.env, restart hart
-# after the Traefik directory-provider migration: sudo systemctl enable --now hart-domain-sync.timer
+scp hart-domain-sync.sh hart-domain-hook.sh <host>:/opt/hart/
+ssh <host> 'chmod +x /opt/hart/hart-domain-sync.sh /opt/hart/hart-domain-hook.sh'
+# edit systemd/hart-domain-sync.service (User=, paths) for your host, then:
+scp systemd/* <host>:/tmp/ && ssh <host> 'sudo mv /tmp/hart-domain-sync.{service,timer} /etc/systemd/system/ && sudo systemctl daemon-reload'
+# write /etc/hart/domain-sync.env with at least BOX_IP=<your-ipv4> (and BOX_IP6 if needed)
+# set HART_DOMAIN_HOOK=/opt/hart/hart-domain-hook.sh in hart's env, restart hart
+# after the Traefik directory-provider prerequisite is in place:
+ssh <host> 'sudo systemctl enable --now hart-domain-sync.timer'
 ```
-
-Requires `curl` + `jq` on the host.
 
 ## Gotcha: proxied wildcards force dual-stack (A **and** AAAA)
 
 If a zone has a **proxied wildcard** (`*.example.com` orange-cloud → Cloudflare), Cloudflare
 synthesizes an **AAAA (IPv6)** answer for any subdomain under it — even one where you added an
 explicit grey **A** record. Let's Encrypt prefers IPv6, so it validates the ACME HTTP-01 challenge
-against **Cloudflare** (which 404s the challenge) instead of your box → the cert never issues, and
-the domain serves only Traefik's default (invalid) cert.
+against **Cloudflare** (which 404s the challenge) instead of your box → the cert never issues and the
+domain serves only Traefik's default (invalid) cert.
 
 Fix: set **`BOX_IP6`** to the box's public IPv6 so the reconciler also writes an explicit grey
 **AAAA → your box**, shadowing the wildcard's synthesized IPv6. Then LE validates against the box on
-both stacks. Requires the box to have public IPv6 and Traefik to listen on it (it binds `*:80/:443`
-= dual-stack by default). On dk1: `BOX_IP6=2a0f:f01:206:1b3::` (in `/etc/hart/domain-sync.env`).
+both stacks. Requires public IPv6 on the box and Traefik listening on it (it binds `*:80/:443` =
+dual-stack by default).
 
-### ACME race on new domains (handled automatically)
+## Gotcha: ACME race on new domains (handled automatically)
 
 Traefik hot-loads a new `hart-*.yml` router the instant it appears and attempts ACME **immediately** —
 often before the just-created DNS has propagated, so that first attempt validates against the stale
-answer (the proxied wildcard's Cloudflare IP) and Traefik backs off. The reconciler handles this: it
-sets DNS **first**, and when a brand-new router file is created it waits `PROPAGATE_WAIT` seconds then
-runs `sudo systemctl restart traefik` once to force a clean ACME retry with the correct DNS. Steady-state
-reconciles (no new domains) never restart. Needs passwordless sudo for the `dk1` user (present on dk1).
+answer and Traefik backs off. The reconciler handles this: it sets DNS **first**, and when a brand-new
+router file is created it waits `PROPAGATE_WAIT`s then runs `sudo systemctl restart traefik` once to
+force a clean retry with correct DNS. Steady-state reconciles never restart.

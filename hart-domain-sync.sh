@@ -9,11 +9,12 @@
 #      the creator's DNS responsibility and are logged, not touched.
 #
 # ADDITIVE & SAFE: it only ever writes/removes files named "$PREFIX"*.yml in $DEST, and only ever
-# upserts A records for hostnames under your own zones. It never edits any other Traefik file and
-# never deletes DNS. If it cannot reach hart, it aborts WITHOUT pruning (never wipes on an outage).
+# upserts A/AAAA records for hostnames under your own zones. It never edits any other Traefik file
+# and never deletes DNS. If it cannot reach hart, it aborts WITHOUT pruning (never wipes on outage).
 #
-# Runs as the `dk1` user (owns $DEST + can read $CF_ENV). Idempotent — safe to run on a timer and
-# from hart's HART_DOMAIN_HOOK. Needs: curl, jq.
+# Run as a user that owns $DEST and can read $CF_ENV. Idempotent — safe to run on a timer and from
+# hart's HART_DOMAIN_HOOK. Needs: curl, jq. Set host-specific values (BOX_IP, BOX_IP6, ...) in the
+# config file below — the built-in defaults are generic conventions, NOT host addresses.
 set -uo pipefail
 
 # Config file (also loaded by the systemd unit's EnvironmentFile) — sourced here too so the
@@ -21,16 +22,22 @@ set -uo pipefail
 CONF="${DOMAIN_SYNC_ENV:-/etc/hart/domain-sync.env}"
 [ -f "$CONF" ] && . "$CONF"
 
-HART_URL="${HART_URL:-http://127.0.0.1:8799}"
-DEST="${DEST:-/etc/traefik/dynamic.d}"
-BOX_IP="${BOX_IP:-92.113.145.178}"
-BOX_IP6="${BOX_IP6:-}"   # dk1 public IPv6; set so LE can validate over IPv6 too (shadows a proxied wildcard's AAAA)
-SERVICE_URL="${SERVICE_URL:-http://127.0.0.1:8799}"
-ENTRYPOINT="${ENTRYPOINT:-websecure}"
-CERT_RESOLVER="${CERT_RESOLVER:-letsencrypt}"
-CF_ENV="${CF_ENV:-/etc/traefik/cloudflare.env}"
-MANAGE_DNS="${MANAGE_DNS:-1}"
+HART_URL="${HART_URL:-http://127.0.0.1:8799}"   # hart daemon (default local)
+DEST="${DEST:-/etc/traefik/dynamic.d}"          # Traefik watched directory
+BOX_IP="${BOX_IP:-}"                            # REQUIRED for DNS: this box's public IPv4 (A target)
+BOX_IP6="${BOX_IP6:-}"                          # this box's public IPv6 (AAAA target) — set if your zone has a proxied wildcard
+SERVICE_URL="${SERVICE_URL:-http://127.0.0.1:8799}"   # how Traefik reaches hart
+ENTRYPOINT="${ENTRYPOINT:-websecure}"           # Traefik TLS entrypoint name
+CERT_RESOLVER="${CERT_RESOLVER:-letsencrypt}"   # Traefik cert resolver name
+CF_ENV="${CF_ENV:-/etc/traefik/cloudflare.env}" # file holding CF_API_EMAIL + CF_API_KEY
+MANAGE_DNS="${MANAGE_DNS:-1}"                   # 0 = don't touch Cloudflare DNS at all
 PREFIX="hart-"
+
+if [ "$MANAGE_DNS" = "1" ] && [ -z "$BOX_IP" ]; then
+  log_early() { echo "$(date -u +%H:%M:%S) [hart-domain-sync] $*" >&2; }
+  log_early "MANAGE_DNS=1 but BOX_IP is unset — set BOX_IP (this box's public IPv4) in $CONF, or MANAGE_DNS=0. Skipping DNS."
+  MANAGE_DNS=0
+fi
 
 log() { echo "$(date -u +%H:%M:%S) [hart-domain-sync] $*" >&2; }
 
