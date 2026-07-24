@@ -1,0 +1,11 @@
+[Unit]
+Description=Reconcile hart custom domains into Traefik dynamic config + Cloudflare DNS
+After=network-online.target hart.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=dk1
+# Optional overrides (BOX_IP, ENTRYPOINT, CERT_RESOLVER, MANAGE_DNS, CF_ENV, DEST, HART_URL):
+EnvironmentFile=-/etc/hart/domain-sync.env
+ExecStart=/opt/hart/hart-domain-sync.sh

@@ -1,0 +1,10 @@
+[Unit]
+Description=Periodic reconcile of hart custom domains (self-heal missed hooks / drift)
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+AccuracySec=30s
+
+[Install]
+WantedBy=timers.target
