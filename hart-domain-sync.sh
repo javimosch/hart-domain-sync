@@ -16,9 +16,15 @@
 # from hart's HART_DOMAIN_HOOK. Needs: curl, jq.
 set -uo pipefail
 
+# Config file (also loaded by the systemd unit's EnvironmentFile) — sourced here too so the
+# HART_DOMAIN_HOOK path gets the same settings as the timer. Simple KEY=value, operator-owned.
+CONF="${DOMAIN_SYNC_ENV:-/etc/hart/domain-sync.env}"
+[ -f "$CONF" ] && . "$CONF"
+
 HART_URL="${HART_URL:-http://127.0.0.1:8799}"
 DEST="${DEST:-/etc/traefik/dynamic.d}"
 BOX_IP="${BOX_IP:-92.113.145.178}"
+BOX_IP6="${BOX_IP6:-}"   # dk1 public IPv6; set so LE can validate over IPv6 too (shadows a proxied wildcard's AAAA)
 SERVICE_URL="${SERVICE_URL:-http://127.0.0.1:8799}"
 ENTRYPOINT="${ENTRYPOINT:-websecure}"
 CERT_RESOLVER="${CERT_RESOLVER:-letsencrypt}"
@@ -70,18 +76,18 @@ zone_for() { # echo the whitelist zone that is a suffix of $1, else nothing
   done
 }
 
-cf_upsert_a() { # cf_upsert_a <fqdn> <zone>
-  local d="$1" z="$2" zid rid body
+cf_upsert() { # cf_upsert <fqdn> <zone> <type> <content>
+  local d="$1" z="$2" t="$3" c="$4" zid rid body
   zid="$(cf GET "/zones?name=$z" | jq -r '.result[0].id // empty')"
   [ -n "$zid" ] || { log "DNS: no zone id for $z"; return; }
-  body="{\"type\":\"A\",\"name\":\"$d\",\"content\":\"$BOX_IP\",\"ttl\":120,\"proxied\":false}"
-  rid="$(cf GET "/zones/$zid/dns_records?type=A&name=$d" | jq -r '.result[0].id // empty')"
+  body="{\"type\":\"$t\",\"name\":\"$d\",\"content\":\"$c\",\"ttl\":120,\"proxied\":false}"
+  rid="$(cf GET "/zones/$zid/dns_records?type=$t&name=$d" | jq -r '.result[0].id // empty')"
   if [ -n "$rid" ]; then
     cf PUT "/zones/$zid/dns_records/$rid" "$body" | jq -e '.success==true' >/dev/null 2>&1 \
-      && log "DNS: A $d -> $BOX_IP (updated)" || log "DNS: update failed for $d"
+      && log "DNS: $t $d -> $c (updated)" || log "DNS: $t update failed for $d"
   else
     cf POST "/zones/$zid/dns_records" "$body" | jq -e '.success==true' >/dev/null 2>&1 \
-      && log "DNS: A $d -> $BOX_IP (created)" || log "DNS: create failed for $d"
+      && log "DNS: $t $d -> $c (created)" || log "DNS: $t create failed for $d"
   fi
 }
 
@@ -112,7 +118,9 @@ YAML
   if ! cmp -s "$tmp" "$f" 2>/dev/null; then mv "$tmp" "$f"; chmod 644 "$f"; log "router: $PREFIX$s.yml written ($d)"; else rm -f "$tmp"; fi
   if [ "$MANAGE_DNS" = "1" ]; then
     z="$(zone_for "$d")"
-    if [ -n "$z" ]; then cf_upsert_a "$d" "$z"
+    if [ -n "$z" ]; then
+      cf_upsert "$d" "$z" A "$BOX_IP"
+      [ -n "$BOX_IP6" ] && cf_upsert "$d" "$z" AAAA "$BOX_IP6"
     else log "DNS: $d is not under one of your zones — create 'A $d -> $BOX_IP' at the domain's registrar"; fi
   fi
 done
