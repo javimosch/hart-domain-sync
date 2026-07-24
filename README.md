@@ -31,7 +31,8 @@ zones. Never edits other Traefik files, never deletes DNS.
 |---|---|---|
 | `HART_URL` | `http://127.0.0.1:8799` | hart daemon |
 | `DEST` | `/etc/traefik/dynamic.d` | Traefik watched dir |
-| `BOX_IP` | `92.113.145.178` | A-record target |
+| `BOX_IP` | `92.113.145.178` | A-record target (IPv4) |
+| `BOX_IP6` | *(empty)* | AAAA-record target (IPv6). **Set this if your zone has a proxied wildcard** — see gotcha below |
 | `SERVICE_URL` | `http://127.0.0.1:8799` | Traefik → hart backend |
 | `ENTRYPOINT` | `websecure` | Traefik TLS entrypoint |
 | `CERT_RESOLVER` | `letsencrypt` | Traefik cert resolver (HTTP-01 on dk1) |
@@ -57,3 +58,19 @@ scp systemd/* dk1:/tmp/ && ssh dk1 'sudo mv /tmp/hart-domain-sync.{service,timer
 ```
 
 Requires `curl` + `jq` on the host.
+
+## Gotcha: proxied wildcards force dual-stack (A **and** AAAA)
+
+If a zone has a **proxied wildcard** (`*.example.com` orange-cloud → Cloudflare), Cloudflare
+synthesizes an **AAAA (IPv6)** answer for any subdomain under it — even one where you added an
+explicit grey **A** record. Let's Encrypt prefers IPv6, so it validates the ACME HTTP-01 challenge
+against **Cloudflare** (which 404s the challenge) instead of your box → the cert never issues, and
+the domain serves only Traefik's default (invalid) cert.
+
+Fix: set **`BOX_IP6`** to the box's public IPv6 so the reconciler also writes an explicit grey
+**AAAA → your box**, shadowing the wildcard's synthesized IPv6. Then LE validates against the box on
+both stacks. Requires the box to have public IPv6 and Traefik to listen on it (it binds `*:80/:443`
+= dual-stack by default). On dk1: `BOX_IP6=2a0f:f01:206:1b3::` (in `/etc/hart/domain-sync.env`).
+
+Also note: newly-mapped domains can land while Traefik is in ACME **back-off** from an earlier failed
+attempt (e.g. before the AAAA existed). `sudo systemctl restart traefik` forces an immediate retry.
