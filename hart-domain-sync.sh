@@ -31,7 +31,9 @@ ENTRYPOINT="${ENTRYPOINT:-websecure}"           # Traefik TLS entrypoint name
 CERT_RESOLVER="${CERT_RESOLVER:-letsencrypt}"   # Traefik cert resolver name
 CF_ENV="${CF_ENV:-/etc/traefik/cloudflare.env}" # file holding CF_API_EMAIL + CF_API_KEY
 MANAGE_DNS="${MANAGE_DNS:-1}"                   # 0 = don't touch Cloudflare DNS at all
+WILDCARD_DOMAIN="${WILDCARD_DOMAIN:-}"          # e.g. hart.intrane.fr — write one Host(\`*.hart.intrane.fr\`) router for all subdomains
 PREFIX="hart-"
+AUTH_TOKEN="${HART_ADMIN_TOKEN:-${HART_TOKEN:-}}"  # send Authorization if the hart instance requires a token
 
 if [ "$MANAGE_DNS" = "1" ] && [ -z "$BOX_IP" ]; then
   log_early() { echo "$(date -u +%H:%M:%S) [hart-domain-sync] $*" >&2; }
@@ -54,9 +56,19 @@ cf() { # cf <METHOD> <path> [json-body]
 }
 
 slug() { printf '%s' "$1" | tr 'A-Z' 'a-z' | tr '.' '-' | tr -cd 'a-z0-9-'; }
+regex_escape() { printf '%s' "$1" | sed 's/\./\\./g'; }
+
+under_wildcard() { # true if $1 is a subdomain (or the same host) of $WILDCARD_DOMAIN
+  [ -n "$WILDCARD_DOMAIN" ] || return 1
+  [ "$1" = "$WILDCARD_DOMAIN" ] && return 0
+  case "$1" in *".$WILDCARD_DOMAIN") return 0 ;; esac
+  return 1
+}
 
 # --- 1. desired set from hart (abort without pruning if unreachable) ---
-RESP="$(curl -s --max-time 10 "$HART_URL/v1/domain")" \
+CURL_AUTH=()
+[ -n "$AUTH_TOKEN" ] && CURL_AUTH=("-H" "Authorization: Bearer $AUTH_TOKEN")
+RESP="$(curl -s --max-time 10 "${CURL_AUTH[@]}" "$HART_URL/v1/domain")" \
   || { log "cannot reach hart at $HART_URL — abort (no prune)"; exit 1; }
 echo "$RESP" | jq -e '.ok==true' >/dev/null 2>&1 \
   || { log "unexpected hart response — abort (no prune): $(printf '%.120s' "$RESP")"; exit 1; }
@@ -105,8 +117,14 @@ cf_upsert() { # cf_upsert <fqdn> <zone> <type> <content>
 # (after a short propagation wait) to trigger a clean ACME retry. Established domains never restart.
 declare -A WANT=()
 NEW=0
+NEEDS_WILDCARD=0
 for d in "${DOMAINS[@]}"; do
   [ -n "$d" ] || continue
+  if under_wildcard "$d"; then
+    NEEDS_WILDCARD=1
+    log "wildcard: $d -> *.$WILDCARD_DOMAIN (skipping per-domain Traefik/DNS)"
+    continue
+  fi
   s="$(slug "$d")"
   WANT["$PREFIX$s.yml"]=1
   f="$DEST/$PREFIX$s.yml"
@@ -138,7 +156,42 @@ YAML
   if ! cmp -s "$tmp" "$f" 2>/dev/null; then mv "$tmp" "$f"; chmod 644 "$f"; log "router: $PREFIX$s.yml written ($d)"; [ "$existed" = 0 ] && NEW=1; else rm -f "$tmp"; fi
 done
 
-# --- 4. prune orphaned router files (reached only after a successful hart fetch) ---
+# --- 4. wildcard instance router (one router for *.WILDCARD_DOMAIN) ---
+if [ -n "$WILDCARD_DOMAIN" ] && [ "$NEEDS_WILDCARD" = "1" ]; then
+  WILD_SLUG="$(slug "$WILDCARD_DOMAIN")"
+  WILDCARD_FILE="${PREFIX}${WILD_SLUG}-wildcard.yml"
+  WANT["$WILDCARD_FILE"]=1
+  wf="$DEST/$WILDCARD_FILE"
+  REGEX="$(regex_escape "$WILDCARD_DOMAIN")"
+  existed=0; [ -e "$wf" ] && existed=1
+  tmp="$(mktemp)"
+  cat > "$tmp" <<YAML
+# managed by hart-domain-sync — wildcard router for *.$WILDCARD_DOMAIN
+http:
+  routers:
+    hart-${WILD_SLUG}-wildcard:
+      rule: "HostRegexp(\`^.+\\.$REGEX$\`)"
+      entryPoints: [$ENTRYPOINT]
+      service: hart-$WILD_SLUG
+      tls:
+        certResolver: $CERT_RESOLVER
+  services:
+    hart-$WILD_SLUG:
+      loadBalancer:
+        servers:
+          - url: "$SERVICE_URL"
+YAML
+  if ! cmp -s "$tmp" "$wf" 2>/dev/null; then mv "$tmp" "$wf"; chmod 644 "$wf"; log "router: $WILDCARD_FILE written (wildcard for *.$WILDCARD_DOMAIN)"; [ "$existed" = 0 ] && NEW=1; else rm -f "$tmp"; fi
+  if [ "$MANAGE_DNS" = "1" ]; then
+    z="$(zone_for "*.$WILDCARD_DOMAIN")"
+    if [ -n "$z" ]; then
+      cf_upsert "*.$WILDCARD_DOMAIN" "$z" A "$BOX_IP"
+      [ -n "$BOX_IP6" ] && cf_upsert "*.$WILDCARD_DOMAIN" "$z" AAAA "$BOX_IP6"
+    else log "DNS: *.$WILDCARD_DOMAIN is not under one of your zones — create the wildcard A record at your registrar"; fi
+  fi
+fi
+
+# --- 5. prune orphaned router files (reached only after a successful hart fetch) ---
 # DNS records are intentionally left in place on unmap (non-destructive; harmless if the domain returns).
 shopt -s nullglob
 for f in "$DEST/$PREFIX"*.yml; do

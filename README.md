@@ -8,15 +8,19 @@ hart on purpose — provisioning stays out of the app (issue machin-hart#16). It
 
 ## What it does (each run)
 
-1. Reads the desired domain set from `GET $HART_URL/v1/domain`.
+1. Reads the desired domain set from `GET $HART_URL/v1/domain` (sends `Authorization: Bearer $HART_ADMIN_TOKEN`
+   or `$HART_TOKEN` if either is set, so it works against locked-down hart instances).
 2. For a domain under one of **your own Cloudflare zones** (the whitelist, fetched live each run),
    upserts an `A → $BOX_IP` (and `AAAA → $BOX_IP6`, if set) grey-cloud record. Domains outside your
    zones are logged for the creator to point their own DNS.
 3. Writes one Traefik file per domain — `$DEST/hart-<slug>.yml` (a `Host()` router → hart's local
    port, TLS via your cert resolver) in a **watched directory** (hot-reload).
-4. If a brand-new domain was added, waits `PROPAGATE_WAIT`s then restarts Traefik once to force a
+4. If `WILDCARD_DOMAIN` is set (e.g. `hart.intrane.fr`), any mapped subdomain of it is handled by a
+   single `hart-<slug>-wildcard.yml` with a `HostRegexp(`^.+\.hart\.intrane\.fr$`)` router instead of
+   per-domain files/DNS. The reconciler also upserts a `*.WILDCARD_DOMAIN` A/AAAA record when needed.
+5. If a brand-new domain was added, waits `PROPAGATE_WAIT`s then restarts Traefik once to force a
    clean ACME attempt (see the race note below). Steady-state runs never restart.
-5. Prunes `hart-*.yml` files whose mapping was removed — **only after a successful hart fetch**
+6. Prunes `hart-*.yml` files whose mapping was removed — **only after a successful hart fetch**
    (never wipes on an outage). DNS records are left in place on unmap (non-destructive).
 
 **Additive & safe:** only ever touches files named `hart-*.yml` in `$DEST` and A/AAAA records under
@@ -45,6 +49,8 @@ least set `BOX_IP`.
 | `CERT_RESOLVER` | `letsencrypt` | Traefik cert resolver name |
 | `CF_ENV` | `/etc/traefik/cloudflare.env` | file holding `CF_API_EMAIL` + `CF_API_KEY` (Cloudflare global key) |
 | `MANAGE_DNS` | `1` | `0` = don't touch Cloudflare DNS at all |
+| `WILDCARD_DOMAIN` | *(empty)* | e.g. `hart.intrane.fr` — subdomains are routed by one `HostRegexp` router instead of per-domain files |
+| `HART_ADMIN_TOKEN` / `HART_TOKEN` | *(empty)* | Authorization header for `GET /v1/domain` on locked-down hart instances |
 | `PROPAGATE_WAIT` | `10` | seconds to wait for DNS before the new-domain Traefik restart |
 
 ## Prerequisites
