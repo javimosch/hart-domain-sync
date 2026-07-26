@@ -149,6 +149,9 @@ cf_upsert() { # cf_upsert <fqdn> <zone> <type> <content>
 # (after a short propagation wait) to trigger a clean ACME retry. Established domains never restart.
 declare -A WANT=()
 NEW=0
+# In file mode the per-domain writes land in a scratch dir and the merge is the real
+# write, so saying "written" every run would be both noisy and untrue.
+if [ "$TRAEFIK_MODE" = "file" ]; then VERB="staged"; else VERB="written"; fi
 NEEDS_WILDCARD=0
 for d in "${DOMAINS[@]}"; do
   [ -n "$d" ] || continue
@@ -185,7 +188,7 @@ http:
         servers:
           - url: "$SERVICE_URL"
 YAML
-  if ! cmp -s "$tmp" "$f" 2>/dev/null; then mv "$tmp" "$f"; chmod 644 "$f"; log "router: $PREFIX$s.yml written ($d)"; [ "$existed" = 0 ] && NEW=1; else rm -f "$tmp"; fi
+  if ! cmp -s "$tmp" "$f" 2>/dev/null; then mv "$tmp" "$f"; chmod 644 "$f"; log "router: $PREFIX$s.yml $VERB ($d)"; [ "$existed" = 0 ] && NEW=1; else rm -f "$tmp"; fi
 done
 
 # --- 4. wildcard instance router (one router for *.WILDCARD_DOMAIN) ---
@@ -213,7 +216,7 @@ http:
         servers:
           - url: "$SERVICE_URL"
 YAML
-  if ! cmp -s "$tmp" "$wf" 2>/dev/null; then mv "$tmp" "$wf"; chmod 644 "$wf"; log "router: $WILDCARD_FILE written (wildcard for *.$WILDCARD_DOMAIN)"; [ "$existed" = 0 ] && NEW=1; else rm -f "$tmp"; fi
+  if ! cmp -s "$tmp" "$wf" 2>/dev/null; then mv "$tmp" "$wf"; chmod 644 "$wf"; log "router: $WILDCARD_FILE $VERB (wildcard for *.$WILDCARD_DOMAIN)"; [ "$existed" = 0 ] && NEW=1; else rm -f "$tmp"; fi
   if [ "$MANAGE_DNS" = "1" ]; then
     z="$(zone_for "*.$WILDCARD_DOMAIN")"
     if [ -n "$z" ]; then
@@ -293,9 +296,39 @@ for sec in SECTIONS:
         if name.startswith(prefix):
             del merged[sec][name]
 
+# Rules already claimed by a FOREIGN router. Two routers with the same Host() rule is
+# a real misconfiguration -- Traefik warns and which one wins is not something we get to
+# choose -- so if another tool already routes a host, it keeps it and we skip that domain.
+# This is the mirror of hotify's "owner wins": whoever is already there is the owner.
+def host_rules(sections):
+    rules = {}
+    for name, block in (sections.get("routers") or {}).items():
+        for line in block.split("\n"):
+            t = line.strip()
+            if t.startswith("rule:"):
+                rules.setdefault(t[5:].strip(), name)
+                break
+    return rules
+
+claimed = host_rules(merged)   # `merged` currently holds ONLY foreign routers
+
+skipped = []
 for f in sorted(glob.glob(os.path.join(stage, prefix + "*.yml"))):
-    for sec, blocks in split_http(open(f).read()).items():
+    staged = split_http(open(f).read())
+    collide = None
+    for rule, owner in host_rules(staged).items():
+        if rule in claimed:
+            collide = (rule, claimed[rule])
+            break
+    if collide:
+        # drop this domain's service too, not just its router
+        skipped.append("%s (rule already routed by %s)" % (os.path.basename(f), collide[1]))
+        continue
+    for sec, blocks in staged.items():
         merged.setdefault(sec, {}).update(blocks)
+
+for m in skipped:
+    sys.stderr.write("  skipped: %s\n" % m)
 
 owned = sum(1 for sec in SECTIONS for n in (merged.get(sec) or {}) if n.startswith(prefix))
 foreign = sum(1 for sec in SECTIONS for n in (merged.get(sec) or {}) if not n.startswith(prefix))
