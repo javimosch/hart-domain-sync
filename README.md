@@ -13,8 +13,8 @@ hart on purpose — provisioning stays out of the app (issue machin-hart#16). It
 2. For a domain under one of **your own Cloudflare zones** (the whitelist, fetched live each run),
    upserts an `A → $BOX_IP` (and `AAAA → $BOX_IP6`, if set) grey-cloud record. Domains outside your
    zones are logged for the creator to point their own DNS.
-3. Writes one Traefik file per domain — `$DEST/hart-<slug>.yml` (a `Host()` router → hart's local
-   port, TLS via your cert resolver) in a **watched directory** (hot-reload).
+3. Writes a `Host()` router → hart's local port (TLS via your cert resolver) for each domain, in
+   whichever layout your Traefik actually reads — see **Traefik provider modes** below.
 4. If `WILDCARD_DOMAIN` is set (e.g. `hart.intrane.fr`), any mapped subdomain of it is handled by a
    single `hart-<slug>-wildcard.yml` with a `HostRegexp(`^.+\.hart\.intrane\.fr$`)` router instead of
    per-domain files/DNS. The reconciler also upserts a `*.WILDCARD_DOMAIN` A/AAAA record when needed.
@@ -23,8 +23,31 @@ hart on purpose — provisioning stays out of the app (issue machin-hart#16). It
 6. Prunes `hart-*.yml` files whose mapping was removed — **only after a successful hart fetch**
    (never wipes on an outage). DNS records are left in place on unmap (non-destructive).
 
-**Additive & safe:** only ever touches files named `hart-*.yml` in `$DEST` and A/AAAA records under
-your own zones. Never edits other Traefik files, never deletes DNS.
+**Additive & safe:** only ever touches things named `hart-*` — files in `$DEST` (directory mode) or
+those keys inside `$SINGLE_FILE` (file mode) — plus A/AAAA records under your own zones. Never
+touches another tool's routers, never deletes DNS.
+
+## Traefik provider modes
+
+Traefik reads dynamic config one of two ways, and writing to the wrong one fails **silently**: the
+routers are simply never loaded, so the domain never gets a certificate and just serves Traefik's
+self-signed default, with nothing in the logs to say why. So the mode is detected rather than assumed.
+
+| `TRAEFIK_MODE` | matches | what this writes |
+|---|---|---|
+| `directory` | `providers.file.directory` | one file per domain, `$DEST/hart-<slug>.yml` |
+| `file` | `providers.file.filename` | merges `hart-*` routers/services **into** `$SINGLE_FILE` |
+| `auto` *(default)* | — | reads `$TRAEFIK_MAIN` and picks whichever it actually uses |
+
+In **file mode** the single file is usually shared with whatever else manages it. The merge therefore
+replaces only `hart-*` keys and carries every other entry through byte-identical — it splices text
+rather than round-tripping the YAML, so comments and other tools' formatting survive. Writes are
+atomic (temp file + rename), so Traefik never sees a half-written file, and the merge is a fixpoint,
+so steady-state runs change nothing and trigger no reload.
+
+⚠️ File mode is only safe if the *other* writers of that file also preserve entries they do not own.
+[hotify](https://github.com/javimosch/hotify-cli) does since its `traefik-dual-mode` change; before
+that, its `setup-traefik` regenerated the whole file and would erase these routers on the next run.
 
 ## Triggers
 
@@ -43,7 +66,10 @@ least set `BOX_IP`.
 | `BOX_IP` | *(required for DNS)* | this box's public **IPv4** (A-record target) |
 | `BOX_IP6` | *(empty)* | this box's public **IPv6** (AAAA target) — **required if your zone has a proxied wildcard**, see below |
 | `HART_URL` | `http://127.0.0.1:8799` | hart daemon |
-| `DEST` | `/etc/traefik/dynamic.d` | Traefik watched directory |
+| `DEST` | `/etc/traefik/dynamic.d` | Traefik watched directory (directory mode) |
+| `TRAEFIK_MODE` | `auto` | `auto` \| `directory` \| `file` — see above |
+| `TRAEFIK_MAIN` | `/etc/traefik/traefik.yml` | read to auto-detect the mode |
+| `SINGLE_FILE` | `/etc/traefik/dynamic.yml` | merge target in file mode |
 | `SERVICE_URL` | `http://127.0.0.1:8799` | how Traefik reaches hart |
 | `ENTRYPOINT` | `websecure` | Traefik TLS entrypoint name |
 | `CERT_RESOLVER` | `letsencrypt` | Traefik cert resolver name |
@@ -55,9 +81,9 @@ least set `BOX_IP`.
 
 ## Prerequisites
 
-- **Traefik directory provider**: Traefik must watch `$DEST` (`providers.file.directory`). If you run
-  a single-file provider today, migrate additively — create the dir, symlink your existing dynamic
-  file into it, and repoint the provider (nothing in the existing file changes).
+- **A Traefik file provider of either shape** — directory or single file. Both are supported and the
+  mode is auto-detected, so no migration is needed. Directory mode is still the cleaner design (no
+  shared file, no merge), but it is no longer a prerequisite.
 - **Cloudflare global key** in `$CF_ENV` as `CF_API_EMAIL` + `CF_API_KEY` (the same file Traefik's
   DNS challenge uses, if you have one).
 - **Passwordless sudo** for the runner user (only used to `systemctl restart traefik` on new domains).
@@ -73,7 +99,6 @@ ssh <host> 'chmod +x /opt/hart/hart-domain-sync.sh /opt/hart/hart-domain-hook.sh
 scp systemd/* <host>:/tmp/ && ssh <host> 'sudo mv /tmp/hart-domain-sync.{service,timer} /etc/systemd/system/ && sudo systemctl daemon-reload'
 # write /etc/hart/domain-sync.env with at least BOX_IP=<your-ipv4> (and BOX_IP6 if needed)
 # set HART_DOMAIN_HOOK=/opt/hart/hart-domain-hook.sh in hart's env, restart hart
-# after the Traefik directory-provider prerequisite is in place:
 ssh <host> 'sudo systemctl enable --now hart-domain-sync.timer'
 ```
 
