@@ -98,13 +98,59 @@ fi
 # In file mode the per-domain files are only an intermediate representation: generate
 # them into a scratch dir with the existing logic, then merge into $SINGLE_FILE. That
 # keeps one code path for building routers (incl. the wildcard) and prune semantics.
-STAGE=""
+STAGE=""; REAL_DEST="$DEST"
 if [ "$TRAEFIK_MODE" = "file" ]; then
   STAGE="$(mktemp -d)"; DEST="$STAGE"
   trap 'rm -rf "$STAGE"' EXIT
   [ -w "$SINGLE_FILE" ] || [ -w "$(dirname "$SINGLE_FILE")" ] \
     || { log "cannot write $SINGLE_FILE — abort"; exit 1; }
+
+  # A box that ran this script in directory mode before (or was switched to file mode)
+  # still has our old per-domain files sitting in $REAL_DEST. Traefik in file mode reads
+  # NOTHING from there, so they are inert -- but they look exactly like live config to
+  # the next person debugging a routing problem. Since we are no longer writing to that
+  # directory, nothing else would ever clean them up, so do it here.
+  if [ -d "$REAL_DEST" ]; then
+    stale=0
+    for f in "$REAL_DEST/$PREFIX"*.yml; do
+      [ -e "$f" ] || continue
+      rm -f "$f" && stale=$((stale+1))
+    done
+    [ "$stale" -gt 0 ] && log "removed $stale inert router file(s) from $REAL_DEST (file mode reads $SINGLE_FILE only)"
+  fi
 fi
+
+# Host() rules already claimed by a router we do not own. Writing a second router for the
+# same rule is a real misconfiguration -- Traefik warns and which one serves is not ours
+# to choose -- so an existing router keeps its host and we skip that domain. Computed per
+# mode because "what else is loaded" differs: the shared file, or our sibling files.
+CLAIMED=""
+CLAIMED=$(TRAEFIK_MODE="$TRAEFIK_MODE" SINGLE_FILE="$SINGLE_FILE" DEST_DIR="$REAL_DEST" \
+          PREFIX="$PREFIX" python3 - <<'PYCLAIM' || true
+import glob, os, re
+mode, prefix = os.environ["TRAEFIK_MODE"], os.environ["PREFIX"]
+files = ([os.environ["SINGLE_FILE"]] if mode == "file"
+         else [f for f in glob.glob(os.path.join(os.environ["DEST_DIR"], "*.yml"))
+               if not os.path.basename(f).startswith(prefix)])
+name_re = re.compile(r"^    ([\w.-]+):\s*$")
+rule_re = re.compile(r"^\s*rule:\s*(.+?)\s*$")
+for f in files:
+    try: lines = open(f).read().split("\n")
+    except OSError: continue
+    owner = None
+    for line in lines:
+        m = name_re.match(line)
+        if m: owner = m.group(1); continue
+        m = rule_re.match(line)
+        if m and owner and not owner.startswith(prefix):
+            print("%s\t%s" % (m.group(1).strip('"\''), owner))
+PYCLAIM
+)
+
+# rule_claimed <domain> -> echoes the owning router name if the rule is taken
+rule_claimed() {
+  printf '%s\n' "$CLAIMED" | awk -F'\t' -v r="Host(\`$1\`)" '$1==r {print $2; exit}'
+}
 
 mkdir -p "$DEST" 2>/dev/null || { log "cannot create $DEST"; exit 1; }
 
@@ -161,6 +207,7 @@ for d in "${DOMAINS[@]}"; do
     continue
   fi
   s="$(slug "$d")"
+
   WANT["$PREFIX$s.yml"]=1
   f="$DEST/$PREFIX$s.yml"
   if [ "$MANAGE_DNS" = "1" ]; then
@@ -170,6 +217,19 @@ for d in "${DOMAINS[@]}"; do
       [ -n "$BOX_IP6" ] && cf_upsert "$d" "$z" AAAA "$BOX_IP6"
     else log "DNS: $d is not under one of your zones — create 'A $d -> $BOX_IP' at the domain's registrar"; fi
   fi
+  # Another tool already routes this host -- it keeps it. This is checked BEFORE the write
+  # so directory mode is protected too: there is no merge step there to catch the clash,
+  # and two files claiming one Host() rule would just sit there generating warnings.
+  # DNS is deliberately upserted above regardless of who routes the host -- the record has
+  # to exist either way, the upsert is idempotent, and it is a useful backstop if the
+  # other tool's DNS ever lapses.
+  owner="$(rule_claimed "$d")"
+  if [ -n "$owner" ]; then
+    unset "WANT[$PREFIX$s.yml]"
+    log "skip: $d is already routed by '$owner' — leaving that router alone"
+    continue
+  fi
+
   existed=0; [ -e "$f" ] && existed=1
   tmp="$(mktemp)"
   cat > "$tmp" <<YAML

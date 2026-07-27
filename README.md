@@ -39,11 +39,23 @@ self-signed default, with nothing in the logs to say why. So the mode is detecte
 | `file` | `providers.file.filename` | merges `hart-*` routers/services **into** `$SINGLE_FILE` |
 | `auto` *(default)* | — | reads `$TRAEFIK_MAIN` and picks whichever it actually uses |
 
+In **file mode** the per-domain files are staged in a tmpdir and only `hart-*` keys are folded
+into the single file. Any of our old files left in `$DEST` from a previous directory-mode run are
+removed, since a `filename:` Traefik never reads them — they are inert but look exactly like live
+config to whoever debugs the next routing problem.
+
 In **file mode** the single file is usually shared with whatever else manages it. The merge therefore
 replaces only `hart-*` keys and carries every other entry through byte-identical — it splices text
 rather than round-tripping the YAML, so comments and other tools' formatting survive. Writes are
 atomic (temp file + rename), so Traefik never sees a half-written file, and the merge is a fixpoint,
 so steady-state runs change nothing and trigger no reload.
+
+**A host already routed by someone else is left alone.** Before writing a router, the reconciler
+checks the `Host()` rules already claimed by routers it does not own (in the shared file, or in
+sibling files in `$DEST`) and skips that domain, naming the owner in the log. Two routers on one
+rule is a real misconfiguration — Traefik warns and which one serves is not yours to choose. DNS is
+still upserted for skipped domains: the record has to exist either way, the upsert is idempotent,
+and it is a useful backstop if the other tool's DNS lapses.
 
 ⚠️ File mode is only safe if the *other* writers of that file also preserve entries they do not own.
 [hotify](https://github.com/javimosch/hotify-cli) does since its `traefik-dual-mode` change; before
