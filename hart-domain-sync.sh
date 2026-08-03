@@ -43,6 +43,7 @@ CERT_RESOLVER="${CERT_RESOLVER:-letsencrypt}"   # Traefik cert resolver name
 CF_ENV="${CF_ENV:-/etc/traefik/cloudflare.env}" # file holding CF_API_EMAIL + CF_API_KEY
 MANAGE_DNS="${MANAGE_DNS:-1}"                   # 0 = don't touch Cloudflare DNS at all
 WILDCARD_DOMAIN="${WILDCARD_DOMAIN:-}"          # e.g. hart.intrane.fr — write one Host(\`*.hart.intrane.fr\`) router for all subdomains
+WILDCARD_INSTANCE_DOMAIN="${WILDCARD_INSTANCE_DOMAIN:-}"  # e.g. hart.intrane.fr — subdomains are covered by an external wildcard router/DNS; skip per-domain files
 PREFIX="hart-"
 AUTH_TOKEN="${HART_ADMIN_TOKEN:-${HART_TOKEN:-}}"  # send Authorization if the hart instance requires a token
 
@@ -76,6 +77,118 @@ under_wildcard() { # true if $1 is a subdomain (or the same host) of $WILDCARD_D
   return 1
 }
 
+under_wildcard_instance() { # true if $1 is a strict subdomain of $WILDCARD_INSTANCE_DOMAIN (external wildcard)
+  [ -n "$WILDCARD_INSTANCE_DOMAIN" ] || return 1
+  case "$1" in *".$WILDCARD_INSTANCE_DOMAIN") return 0 ;; esac
+  return 1
+}
+
+resolve_traefik_mode() { # resolve TRAEFIK_MODE=auto into directory|file
+  if [ "$TRAEFIK_MODE" = "auto" ]; then
+    if [ -r "$TRAEFIK_MAIN" ] && awk '/^providers:/{p=1} p&&/^[[:space:]]+file:/{f=1} f&&/directory:/{print "d";exit} f&&/filename:/{print "f";exit}' "$TRAEFIK_MAIN" | grep -q d; then
+      TRAEFIK_MODE=directory
+    else
+      TRAEFIK_MODE=file
+    fi
+    log "traefik mode: $TRAEFIK_MODE (detected from $TRAEFIK_MAIN)"
+  fi
+}
+
+# --- fast remove path (HART_DOMAIN_HOOK remove <domain>) ---
+# The hook already knows the domain is gone, so clean up its router immediately
+# without blocking on a hart fetch or a Cloudflare round-trip. DNS stays in place.
+if [ "${1:-}" = "--remove" ] && [ -n "${2:-}" ]; then
+  REMOVE_DOMAIN="$2"
+  resolve_traefik_mode
+  if under_wildcard "$REMOVE_DOMAIN" || under_wildcard_instance "$REMOVE_DOMAIN"; then
+    log "remove: $REMOVE_DOMAIN is under a wildcard — no per-domain file to remove"
+    exit 0
+  fi
+  S="$(slug "$REMOVE_DOMAIN")"
+  if [ "$TRAEFIK_MODE" = "directory" ]; then
+    F="$DEST/$PREFIX$S.yml"
+    if [ -e "$F" ]; then
+      rm -f "$F" && log "remove: $REMOVE_DOMAIN ($F)"
+    else
+      log "remove: $REMOVE_DOMAIN has no router file"
+    fi
+  else
+    RM_OUT=$(SLUG="$S" PREFIX="$PREFIX" SINGLE_FILE="$SINGLE_FILE" python3 - <<'PYRM'
+import os, sys, tempfile
+
+target = os.environ["SINGLE_FILE"]
+prefix = os.environ["PREFIX"]
+slug = os.environ["SLUG"]
+name = prefix + slug
+SECTIONS = ("routers", "services", "middlewares")
+
+def split_http(text):
+    out, section, key, buf = {}, None, None, []
+    def flush():
+        nonlocal key, buf
+        if section and key and buf:
+            out.setdefault(section, {})[key] = "\n".join(buf).rstrip() + "\n"
+        key, buf = None, []
+    for line in text.split("\n"):
+        t = line.strip()
+        indent = len(line) - len(line.lstrip(" "))
+        if indent == 2 and t.endswith(":") and not t.startswith("-"):
+            flush(); section = t[:-1]; continue
+        if indent == 0 and t:
+            flush()
+            if t != "http:": section = None
+            continue
+        if section is None: continue
+        if indent == 4 and t.endswith(":") and " " not in t:
+            flush(); key = t[:-1]; buf = [line]; continue
+        if key and (indent > 4 or not t):
+            buf.append(line)
+    flush()
+    return out
+
+def render(sections):
+    parts = ["http:\n"]
+    for sec in SECTIONS:
+        blocks = sections.get(sec) or {}
+        if not blocks: continue
+        parts.append("  %s:\n" % sec)
+        for name in sorted(blocks):
+            parts.append(blocks[name].rstrip("\n") + "\n\n")
+    return "".join(parts)
+
+try:
+    existing = open(target).read()
+except FileNotFoundError:
+    existing = ""
+sections = split_http(existing)
+removed = False
+for sec in SECTIONS:
+    if name in (sections.get(sec) or {}):
+        del sections[sec][name]
+        removed = True
+if not removed:
+    print("remove: %s has no entry in %s" % (name, target))
+    sys.exit(0)
+out = render(sections)
+if out == existing:
+    print("remove: %s already absent from %s" % (name, target))
+    sys.exit(0)
+d = os.path.dirname(target) or "."
+fd, tmp = tempfile.mkstemp(dir=d, prefix=".hart-remove.")
+try:
+    with os.fdopen(fd, "w") as fh: fh.write(out)
+    os.chmod(tmp, 0o644)
+    os.replace(tmp, target)
+except BaseException:
+    os.path.exists(tmp) and os.unlink(tmp); raise
+print("remove: %s removed from %s" % (name, target))
+PYRM
+)
+    [ -n "$RM_OUT" ] && log "$RM_OUT"
+  fi
+  exit 0
+fi
+
 # --- 1. desired set from hart (abort without pruning if unreachable) ---
 CURL_AUTH=()
 [ -n "$AUTH_TOKEN" ] && CURL_AUTH=("-H" "Authorization: Bearer $AUTH_TOKEN")
@@ -86,14 +199,7 @@ echo "$RESP" | jq -e '.ok==true' >/dev/null 2>&1 \
 mapfile -t DOMAINS < <(echo "$RESP" | jq -r '.domains[]?.domain' | grep -E '^[a-z0-9.-]+$' || true)
 
 # resolve the provider layout before touching anything
-if [ "$TRAEFIK_MODE" = "auto" ]; then
-  if [ -r "$TRAEFIK_MAIN" ] && awk '/^providers:/{p=1} p&&/^[[:space:]]+file:/{f=1} f&&/directory:/{print "d";exit} f&&/filename:/{print "f";exit}' "$TRAEFIK_MAIN" | grep -q d; then
-    TRAEFIK_MODE=directory
-  else
-    TRAEFIK_MODE=file
-  fi
-  log "traefik mode: $TRAEFIK_MODE (detected from $TRAEFIK_MAIN)"
-fi
+resolve_traefik_mode
 
 # In file mode the per-domain files are only an intermediate representation: generate
 # them into a scratch dir with the existing logic, then merge into $SINGLE_FILE. That
@@ -204,6 +310,10 @@ for d in "${DOMAINS[@]}"; do
   if under_wildcard "$d"; then
     NEEDS_WILDCARD=1
     log "wildcard: $d -> *.$WILDCARD_DOMAIN (skipping per-domain Traefik/DNS)"
+    continue
+  fi
+  if under_wildcard_instance "$d"; then
+    log "wildcard instance: $d -> *.$WILDCARD_INSTANCE_DOMAIN (skipping per-domain Traefik/DNS)"
     continue
   fi
   s="$(slug "$d")"
