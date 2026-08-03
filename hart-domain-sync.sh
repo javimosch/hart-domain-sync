@@ -77,9 +77,8 @@ under_wildcard() { # true if $1 is a subdomain (or the same host) of $WILDCARD_D
   return 1
 }
 
-under_wildcard_instance() { # true if $1 is a subdomain of $WILDCARD_INSTANCE_DOMAIN (external wildcard)
+under_wildcard_instance() { # true if $1 is a strict subdomain of $WILDCARD_INSTANCE_DOMAIN (external wildcard)
   [ -n "$WILDCARD_INSTANCE_DOMAIN" ] || return 1
-  [ "$1" = "$WILDCARD_INSTANCE_DOMAIN" ] && return 0
   case "$1" in *".$WILDCARD_INSTANCE_DOMAIN") return 0 ;; esac
   return 1
 }
