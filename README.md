@@ -18,10 +18,14 @@ hart on purpose — provisioning stays out of the app (issue machin-hart#16). It
 4. If `WILDCARD_DOMAIN` is set (e.g. `hart.intrane.fr`), any mapped subdomain of it is handled by a
    single `hart-<slug>-wildcard.yml` with a `HostRegexp(`^.+\.hart\.intrane\.fr$`)` router instead of
    per-domain files/DNS. The reconciler also upserts a `*.WILDCARD_DOMAIN` A/AAAA record when needed.
-5. If a brand-new domain was added, waits `PROPAGATE_WAIT`s then restarts Traefik once to force a
+5. If `WILDCARD_INSTANCE_DOMAIN` is set (e.g. `hart.intrane.fr`), subdomains are skipped — no
+   per-domain files and no DNS upserts — because they are already covered by an external wildcard
+   router and wildcard DNS.
+6. If a brand-new domain was added, waits `PROPAGATE_WAIT`s then restarts Traefik once to force a
    clean ACME attempt (see the race note below). Steady-state runs never restart.
-6. Prunes `hart-*.yml` files whose mapping was removed — **only after a successful hart fetch**
-   (never wipes on an outage). DNS records are left in place on unmap (non-destructive).
+7. Prunes `hart-*.yml` files whose mapping was removed — **only after a successful hart fetch**
+   (never wipes on an outage). `HART_DOMAIN_HOOK remove` also triggers an immediate, single-file
+   cleanup so unmap is reflected without waiting for the timer. DNS records are left in place.
 
 **Additive & safe:** only ever touches things named `hart-*` — files in `$DEST` (directory mode) or
 those keys inside `$SINGLE_FILE` (file mode) — plus A/AAAA records under your own zones. Never
@@ -63,8 +67,11 @@ that, its `setup-traefik` regenerated the whole file and would erase these route
 
 ## Triggers
 
-- **`hart-domain-hook.sh`** — set as hart's `HART_DOMAIN_HOOK`; fires a background reconcile the
-  instant a domain is mapped/unmapped (returns immediately, doesn't block the HTTP response).
+- **`hart-domain-hook.sh`** — set as hart's `HART_DOMAIN_HOOK`; hart calls it with
+  `<add|set|remove> <domain> <owner> <artifact>` (returns immediately, doesn't block the HTTP
+  response).
+  - `add`/`set` → full background reconcile, also pruning any stale mappings.
+  - `remove` → fast background removal of the single per-domain router; the timer is the safety net.
 - **`hart-domain-sync.timer`** — every 5 min; self-heals missed hooks, manual DB edits, restarts.
 
 ## Config
@@ -87,7 +94,8 @@ least set `BOX_IP`.
 | `CERT_RESOLVER` | `letsencrypt` | Traefik cert resolver name |
 | `CF_ENV` | `/etc/traefik/cloudflare.env` | file holding `CF_API_EMAIL` + `CF_API_KEY` (Cloudflare global key) |
 | `MANAGE_DNS` | `1` | `0` = don't touch Cloudflare DNS at all |
-| `WILDCARD_DOMAIN` | *(empty)* | e.g. `hart.intrane.fr` — subdomains are routed by one `HostRegexp` router instead of per-domain files |
+| `WILDCARD_DOMAIN` | *(empty)* | e.g. `hart.intrane.fr` — subdomains are routed by one `HostRegexp` router (managed by this script) instead of per-domain files |
+| `WILDCARD_INSTANCE_DOMAIN` | *(empty)* | e.g. `hart.intrane.fr` — subdomains are covered by an external wildcard router/DNS; no per-domain files or DNS upserts |
 | `HART_ADMIN_TOKEN` / `HART_TOKEN` | *(empty)* | Authorization header for `GET /v1/domain` on locked-down hart instances |
 | `PROPAGATE_WAIT` | `10` | seconds to wait for DNS before the new-domain Traefik restart |
 
