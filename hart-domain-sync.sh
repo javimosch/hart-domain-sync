@@ -43,6 +43,7 @@ CERT_RESOLVER="${CERT_RESOLVER:-letsencrypt}"   # Traefik cert resolver name
 CF_ENV="${CF_ENV:-/etc/traefik/cloudflare.env}" # file holding CF_API_EMAIL + CF_API_KEY
 MANAGE_DNS="${MANAGE_DNS:-1}"                   # 0 = don't touch Cloudflare DNS at all
 WILDCARD_DOMAIN="${WILDCARD_DOMAIN:-}"          # e.g. hart.intrane.fr — write one Host(\`*.hart.intrane.fr\`) router for all subdomains
+WILDCARD_INSTANCE_DOMAIN="${WILDCARD_INSTANCE_DOMAIN:-}"  # e.g. hart.intrane.fr — subdomains are covered by an external wildcard router/DNS; skip per-domain files
 PREFIX="hart-"
 AUTH_TOKEN="${HART_ADMIN_TOKEN:-${HART_TOKEN:-}}"  # send Authorization if the hart instance requires a token
 
@@ -73,6 +74,12 @@ under_wildcard() { # true if $1 is a subdomain (or the same host) of $WILDCARD_D
   [ -n "$WILDCARD_DOMAIN" ] || return 1
   [ "$1" = "$WILDCARD_DOMAIN" ] && return 0
   case "$1" in *".$WILDCARD_DOMAIN") return 0 ;; esac
+  return 1
+}
+
+under_wildcard_instance() { # true if $1 is a strict subdomain of $WILDCARD_INSTANCE_DOMAIN (external wildcard)
+  [ -n "$WILDCARD_INSTANCE_DOMAIN" ] || return 1
+  case "$1" in *".$WILDCARD_INSTANCE_DOMAIN") return 0 ;; esac
   return 1
 }
 
@@ -204,6 +211,10 @@ for d in "${DOMAINS[@]}"; do
   if under_wildcard "$d"; then
     NEEDS_WILDCARD=1
     log "wildcard: $d -> *.$WILDCARD_DOMAIN (skipping per-domain Traefik/DNS)"
+    continue
+  fi
+  if under_wildcard_instance "$d"; then
+    log "wildcard instance: $d -> *.$WILDCARD_INSTANCE_DOMAIN (skipping per-domain Traefik/DNS)"
     continue
   fi
   s="$(slug "$d")"
