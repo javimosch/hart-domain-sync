@@ -55,6 +55,14 @@ fi
 
 log() { echo "$(date -u +%H:%M:%S) [hart-domain-sync] $*" >&2; }
 
+# Optional CLI mode: --remove <domain> (called by HART_DOMAIN_HOOK on removal).
+# It runs before any hart/CF I/O and exits after deleting the per-domain config.
+REMOVE_DOMAIN=""
+if [ "${1:-}" = "--remove" ]; then
+  REMOVE_DOMAIN="${2:-}"
+  [ -n "$REMOVE_DOMAIN" ] || { log "usage: $0 [--remove <domain>]"; exit 1; }
+fi
+
 # CF creds: extract (don't source — env files can carry chars bash chokes on).
 cf_val() { grep -i "^$1=" "$CF_ENV" 2>/dev/null | head -1 | cut -d= -f2- | tr -d '"'"'"' ' | tr -d "'"; }
 CF_EMAIL="$(cf_val CF_API_EMAIL)"
@@ -70,6 +78,65 @@ cf() { # cf <METHOD> <path> [json-body]
 slug() { printf '%s' "$1" | tr 'A-Z' 'a-z' | tr '.' '-' | tr -cd 'a-z0-9-'; }
 regex_escape() { printf '%s' "$1" | sed 's/\./\\./g'; }
 
+fast_remove() { # fast_remove <domain>: delete the per-domain router without fetching hart
+  local domain="$1" s f key changed
+  s="${PREFIX}$(slug "$domain").yml"
+  if [ "$TRAEFIK_MODE" = "file" ]; then
+    key="${PREFIX}$(slug "$domain")"
+    [ -w "$SINGLE_FILE" ] || [ -w "$(dirname "$SINGLE_FILE")" ] \
+      || { log "cannot write $SINGLE_FILE — abort"; exit 1; }
+    changed=$(TARGET="$SINGLE_FILE" PREFIX="$PREFIX" KEY="$key" python3 - <<'PYREM'
+import os, sys, tempfile
+target, key = os.environ["TARGET"], os.environ["KEY"]
+try:
+    text = open(target).read()
+except FileNotFoundError:
+    print("0"); sys.exit(0)
+sections = ("routers", "services", "middlewares")
+out, section, skip, changed = [], None, False, False
+for line in text.split("\n"):
+    t = line.strip()
+    indent = len(line) - len(line.lstrip(" "))
+    if indent == 2 and t.endswith(":") and not t.startswith("-"):
+        section = t[:-1]
+        skip = False
+        out.append(line)
+        continue
+    if section in sections and indent == 4 and t.endswith(":") and " " not in t:
+        if t[:-1] == key:
+            skip = True
+            changed = True
+            continue
+        skip = False
+    if not skip:
+        out.append(line)
+if not changed:
+    print("0"); sys.exit(0)
+out = "\n".join(out)
+d = os.path.dirname(target) or "."
+fd, tmp = tempfile.mkstemp(dir=d, prefix=".hart-remove.")
+with os.fdopen(fd, "w") as fh: fh.write(out)
+os.chmod(tmp, 0o644)
+os.replace(tmp, target)
+print("1")
+PYREM
+) || { log "remove from $SINGLE_FILE FAILED — left untouched"; exit 1; }
+    if [ "$changed" = "1" ]; then
+      log "removed: $key from $SINGLE_FILE (fast remove for $domain)"
+    else
+      log "remove: $key not found in $SINGLE_FILE (fast remove for $domain)"
+    fi
+  else
+    f="$DEST/$s"
+    if [ -e "$f" ]; then
+      rm -f "$f" && log "removed: $s (fast remove for $domain)" || log "WARN: failed to remove $s"
+    else
+      log "remove: $s not present (fast remove for $domain)"
+    fi
+  fi
+  log "fast remove complete: $domain"
+}
+
 under_wildcard() { # true if $1 is a subdomain (or the same host) of $WILDCARD_DOMAIN
   [ -n "$WILDCARD_DOMAIN" ] || return 1
   [ "$1" = "$WILDCARD_DOMAIN" ] && return 0
@@ -83,15 +150,6 @@ under_wildcard_instance() { # true if $1 is a strict subdomain of $WILDCARD_INST
   return 1
 }
 
-# --- 1. desired set from hart (abort without pruning if unreachable) ---
-CURL_AUTH=()
-[ -n "$AUTH_TOKEN" ] && CURL_AUTH=("-H" "Authorization: Bearer $AUTH_TOKEN")
-RESP="$(curl -s --max-time 10 "${CURL_AUTH[@]}" "$HART_URL/v1/domain")" \
-  || { log "cannot reach hart at $HART_URL — abort (no prune)"; exit 1; }
-echo "$RESP" | jq -e '.ok==true' >/dev/null 2>&1 \
-  || { log "unexpected hart response — abort (no prune): $(printf '%.120s' "$RESP")"; exit 1; }
-mapfile -t DOMAINS < <(echo "$RESP" | jq -r '.domains[]?.domain' | grep -E '^[a-z0-9.-]+$' || true)
-
 # resolve the provider layout before touching anything
 if [ "$TRAEFIK_MODE" = "auto" ]; then
   if [ -r "$TRAEFIK_MAIN" ] && awk '/^providers:/{p=1} p&&/^[[:space:]]+file:/{f=1} f&&/directory:/{print "d";exit} f&&/filename:/{print "f";exit}' "$TRAEFIK_MAIN" | grep -q d; then
@@ -101,6 +159,21 @@ if [ "$TRAEFIK_MODE" = "auto" ]; then
   fi
   log "traefik mode: $TRAEFIK_MODE (detected from $TRAEFIK_MAIN)"
 fi
+
+# Fast remove path for HART_DOMAIN_HOOK remove events: no hart fetch needed.
+if [ -n "$REMOVE_DOMAIN" ]; then
+  fast_remove "$REMOVE_DOMAIN"
+  exit 0
+fi
+
+# --- 1. desired set from hart (abort without pruning if unreachable) ---
+CURL_AUTH=()
+[ -n "$AUTH_TOKEN" ] && CURL_AUTH=("-H" "Authorization: Bearer $AUTH_TOKEN")
+RESP="$(curl -s --max-time 10 "${CURL_AUTH[@]}" "$HART_URL/v1/domain")" \
+  || { log "cannot reach hart at $HART_URL — abort (no prune)"; exit 1; }
+echo "$RESP" | jq -e '.ok==true' >/dev/null 2>&1 \
+  || { log "unexpected hart response — abort (no prune): $(printf '%.120s' "$RESP")"; exit 1; }
+mapfile -t DOMAINS < <(echo "$RESP" | jq -r '.domains[]?.domain' | grep -E '^[a-z0-9.-]+$' || true)
 
 # In file mode the per-domain files are only an intermediate representation: generate
 # them into a scratch dir with the existing logic, then merge into $SINGLE_FILE. That
