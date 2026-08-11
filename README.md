@@ -18,9 +18,11 @@ hart on purpose — provisioning stays out of the app (issue machin-hart#16). It
 4. If `WILDCARD_DOMAIN` is set (e.g. `hart.intrane.fr`), any mapped subdomain of it is handled by a
    single `hart-<slug>-wildcard.yml` with a `HostRegexp(`^.+\.hart\.intrane\.fr$`)` router instead of
    per-domain files/DNS. The reconciler also upserts a `*.WILDCARD_DOMAIN` A/AAAA record when needed.
-5. If a brand-new domain was added, waits `PROPAGATE_WAIT`s then restarts Traefik once to force a
+5. If `WILDCARD_INSTANCE_DOMAIN` is set (e.g. `hart.intrane.fr`), subdomains under it are covered by an
+   externally managed wildcard router/DNS and are skipped; they are logged so the operator can see them.
+6. If a brand-new domain was added, waits `PROPAGATE_WAIT`s then restarts Traefik once to force a
    clean ACME attempt (see the race note below). Steady-state runs never restart.
-6. Prunes `hart-*.yml` files whose mapping was removed — **only after a successful hart fetch**
+7. Prunes `hart-*.yml` files whose mapping was removed — **only after a successful hart fetch**
    (never wipes on an outage). DNS records are left in place on unmap (non-destructive).
 
 **Additive & safe:** only ever touches things named `hart-*` — files in `$DEST` (directory mode) or
@@ -88,6 +90,7 @@ least set `BOX_IP`.
 | `CF_ENV` | `/etc/traefik/cloudflare.env` | file holding `CF_API_EMAIL` + `CF_API_KEY` (Cloudflare global key) |
 | `MANAGE_DNS` | `1` | `0` = don't touch Cloudflare DNS at all |
 | `WILDCARD_DOMAIN` | *(empty)* | e.g. `hart.intrane.fr` — subdomains are routed by one `HostRegexp` router instead of per-domain files |
+| `WILDCARD_INSTANCE_DOMAIN` | *(empty)* | e.g. `hart.intrane.fr` — subdomains are covered by an externally managed wildcard; skip per-domain files and DNS |
 | `HART_ADMIN_TOKEN` / `HART_TOKEN` | *(empty)* | Authorization header for `GET /v1/domain` on locked-down hart instances |
 | `PROPAGATE_WAIT` | `10` | seconds to wait for DNS before the new-domain Traefik restart |
 
