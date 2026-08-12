@@ -49,6 +49,11 @@ PREFIX="hart-"
 REAL_DEST="$DEST"                               # original destination, even if file mode stages elsewhere
 AUTH_TOKEN="${HART_ADMIN_TOKEN:-${HART_TOKEN:-}}"  # send Authorization if the hart instance requires a token
 
+# DNS/HTTP hostnames are case-insensitive; normalise wildcard inputs so
+# mixed-case hart domains still match the configured wildcard.
+WILDCARD_DOMAIN="$(printf '%s' "$WILDCARD_DOMAIN" | tr 'A-Z' 'a-z')"
+WILDCARD_INSTANCE_DOMAIN="$(printf '%s' "$WILDCARD_INSTANCE_DOMAIN" | tr 'A-Z' 'a-z')"
+
 if [ "$MANAGE_DNS" = "1" ] && [ -z "$BOX_IP" ]; then
   log_early() { echo "$(date -u +%H:%M:%S) [hart-domain-sync] $*" >&2; }
   log_early "MANAGE_DNS=1 but BOX_IP is unset — set BOX_IP (this box's public IPv4) in $CONF, or MANAGE_DNS=0. Skipping DNS."
@@ -214,7 +219,7 @@ RESP="$(curl -s --max-time 10 "${CURL_AUTH[@]}" "$HART_URL/v1/domain")" \
   || { log "cannot reach hart at $HART_URL — abort (no prune)"; exit 1; }
 echo "$RESP" | jq -e '.ok==true' >/dev/null 2>&1 \
   || { log "unexpected hart response — abort (no prune): $(printf '%.120s' "$RESP")"; exit 1; }
-mapfile -t DOMAINS < <(echo "$RESP" | jq -r '.domains[]?.domain' | grep -E '^[a-z0-9.-]+$' || true)
+mapfile -t DOMAINS < <(echo "$RESP" | jq -r '.domains[]?.domain' | tr 'A-Z' 'a-z' | grep -E '^[a-z0-9.-]+$' || true)
 
 # In file mode the per-domain files are only an intermediate representation: generate
 # them into a scratch dir with the existing logic, then merge into $SINGLE_FILE. That
