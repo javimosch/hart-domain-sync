@@ -6,7 +6,10 @@
 exec >/dev/null 2>&1
 SYNC="${HART_DOMAIN_SYNC:-/opt/hart/hart-domain-sync.sh}"
 LOG="${HART_DOMAIN_SYNC_LOG:-/opt/hart/domain-sync.log}"
-mkdir -p "$(dirname "$LOG")" 2>/dev/null || true
+LOG_DIR="$(dirname "$LOG")"
+if ! mkdir -p "$LOG_DIR" 2>/dev/null || [ ! -w "$LOG_DIR" ]; then
+  LOG="/tmp/hart-domain-sync.log"
+fi
 [ -x "$SYNC" ] || { printf '%s\n' "HART_DOMAIN_SYNC not found or not executable: $SYNC" >>"$LOG"; exit 1; }
 case "${1:-}" in
   remove) nohup "$SYNC" --remove "${2:-}" >>"$LOG" 2>&1 & ;;

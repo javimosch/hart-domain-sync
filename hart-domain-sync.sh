@@ -65,14 +65,34 @@ if [ "${1:-}" = "--remove" ]; then
 fi
 
 # CF creds: extract (don't source — env files can carry chars bash chokes on).
-# Tolerates optional "export" prefix, whitespace around "=", and leading/trailing
-# quotes while preserving embedded spaces and any "=" inside the value.
+# Tolerates optional "export" prefix, whitespace around "=", leading/trailing
+# quotes, embedded spaces and any "=" inside the value, and shell-style trailing
+# comments outside of quoted strings.
+strip_env_comment() {
+  local s="$1" c in_quote="" out=""
+  for (( i=0; i<${#s}; i++ )); do
+    c="${s:$i:1}"
+    if [ -n "$in_quote" ]; then
+      [ "$c" = "$in_quote" ] && in_quote=""
+      out="$out$c"
+      continue
+    fi
+    if [ "$c" = '"' ] || [ "$c" = "'" ]; then
+      in_quote="$c"; out="$out$c"; continue
+    fi
+    [ "$c" = "#" ] && break
+    out="$out$c"
+  done
+  printf '%s' "$out"
+}
+
 cf_val() {
   local key="$1" line value
   [ -f "$CF_ENV" ] || return
   line=$(grep -i "^[[:space:]]*\(export[[:space:]]\{1,\}\)\{0,1\}${key}[[:space:]]*=" "$CF_ENV" 2>/dev/null | head -1) || true
   [ -n "$line" ] || return
   value="${line#*=}"
+  value="$(strip_env_comment "$value")"
   value="${value#"${value%%[![:space:]]*}"}"
   value="${value%"${value##*[![:space:]]}"}"
   value="${value#\"}"; value="${value%\"}"
