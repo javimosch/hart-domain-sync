@@ -48,3 +48,12 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
 - Added two small fixes:
   1. `cf_val()` now accepts `export KEY=value`, whitespace around `=`, and embedded spaces in values.
   2. `hart-domain-hook.sh` creates the log directory before appending to `HART_DOMAIN_SYNC_LOG`.
+
+## 2026-08-12 architect plan (am-add074-dkmygibn16b6-31ade806)
+
+- GitHub issue list is empty; no open issues remain to fix.
+- Open PR #10 (`am/am-add074-dkmxlvsfu5ve-36f1876d`) adds `cf_val()` env-file parsing and `hart-domain-hook.sh` log-directory creation, but the same fixes are already present in `origin/master` (commit `9e04691`). PR #10 is therefore stale and should be closed as superseded.
+- The current branch is at the latest `origin/master`; no new code changes are required to satisfy the assigned objective.
+- Next step: QA runs the verification gate (`bash -n hart-domain-sync.sh hart-domain-hook.sh`, `shellcheck` if available, and manual dry-runs for `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, and `--remove` in both directory and file modes).
+- If QA finds no issues, dev closes PR #10 and the objective is resolved.
+- If QA finds a new bug, dev opens a focused issue and produces one small conventional-commit PR.
