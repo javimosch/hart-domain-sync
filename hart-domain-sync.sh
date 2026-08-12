@@ -65,7 +65,25 @@ if [ "${1:-}" = "--remove" ]; then
 fi
 
 # CF creds: extract (don't source — env files can carry chars bash chokes on).
-cf_val() { grep -i "^$1=" "$CF_ENV" 2>/dev/null | head -1 | cut -d= -f2- | tr -d '"'"'"' ' | tr -d "'"; }
+# Tolerates `export KEY=value`, `KEY = "value"`, and unquoted values with
+# embedded spaces or '=' characters. Outer quotes are stripped once.
+cf_val() {
+  python3 - "$1" "$CF_ENV" <<'PY'
+import re, sys
+key, path = sys.argv[1], sys.argv[2]
+try:
+    text = open(path).read()
+except FileNotFoundError:
+    sys.exit(0)
+m = re.search(r'(?im)^\s*(?:export\s+)?\s*' + re.escape(key) + r'\s*=\s*(.*?)\s*$', text)
+if not m:
+    sys.exit(0)
+val = m.group(1)
+if (val.startswith('"') and val.endswith('"')) or (val.startswith("'") and val.endswith("'")):
+    val = val[1:-1]
+print(val, end='')
+PY
+}
 CF_EMAIL="$(cf_val CF_API_EMAIL)"
 CF_KEY="$(cf_val CF_API_KEY)"
 
