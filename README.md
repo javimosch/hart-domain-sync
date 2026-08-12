@@ -67,6 +67,8 @@ that, its `setup-traefik` regenerated the whole file and would erase these route
 
 - **`hart-domain-hook.sh`** — set as hart's `HART_DOMAIN_HOOK`; fires a background reconcile the
   instant a domain is mapped/unmapped (returns immediately, doesn't block the HTTP response).
+  Set `HART_DOMAIN_SYNC` and `HART_DOMAIN_SYNC_LOG` to override the default hook script and log path;
+  if the configured log directory is not writable, the hook falls back to `/tmp/hart-domain-sync.log`.
 - **`hart-domain-sync.timer`** — every 5 min; self-heals missed hooks, manual DB edits, restarts.
 
 ## Config
@@ -87,7 +89,7 @@ least set `BOX_IP`.
 | `SERVICE_URL` | `http://127.0.0.1:8799` | how Traefik reaches hart |
 | `ENTRYPOINT` | `websecure` | Traefik TLS entrypoint name |
 | `CERT_RESOLVER` | `letsencrypt` | Traefik cert resolver name |
-| `CF_ENV` | `/etc/traefik/cloudflare.env` | file holding `CF_API_EMAIL` + `CF_API_KEY` (Cloudflare global key) |
+| `CF_ENV` | `/etc/traefik/cloudflare.env` | file holding `CF_API_EMAIL` + `CF_API_KEY` (Cloudflare global key); supports `export`, whitespace around `=`, quotes, and trailing comments |
 | `MANAGE_DNS` | `1` | `0` = don't touch Cloudflare DNS at all |
 | `WILDCARD_DOMAIN` | *(empty)* | e.g. `hart.intrane.fr` — subdomains are routed by one `HostRegexp` router instead of per-domain files |
 | `WILDCARD_INSTANCE_DOMAIN` | *(empty)* | e.g. `hart.intrane.fr` — subdomains are covered by an externally managed wildcard; skip per-domain files and DNS |
