@@ -40,3 +40,11 @@ Existing open PRs #2, #3, and #4 already attempt overlapping changes for the sam
 - Open PRs #2, #3, #4, and #6 implement overlapping aspects of issue #1 and are now stale; they should be closed or superseded.
 - Next step: QA runs the verification gate (`bash -n`, `shellcheck` if available, manual dry-runs for `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, and `--remove` in both directory and file modes).
 - If a new bug is found during verification, open a focused issue and produce one small conventional-commit PR; otherwise the original objective is resolved.
+
+## 2026-08-12 dev run notes (am-add074-dkmwpqql95xu-31fa60e0)
+
+- GitHub issue #1 remains CLOSED on `origin/master`.
+- Closed stale overlapping PRs #2, #3, #4, and #6 as superseded by the current branch.
+- Added two small fixes:
+  1. `cf_val()` now accepts `export KEY=value`, whitespace around `=`, and embedded spaces in values.
+  2. `hart-domain-hook.sh` creates the log directory before appending to `HART_DOMAIN_SYNC_LOG`.
