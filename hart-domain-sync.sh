@@ -246,11 +246,14 @@ if [ "$MANAGE_DNS" = "1" ] && [ -n "$CF_EMAIL" ] && [ -n "$CF_KEY" ]; then
   fi
 fi
 
-zone_for() { # echo the whitelist zone that is a suffix of $1, else nothing
-  local d="$1" z
+zone_for() { # echo the most specific whitelist zone that is a suffix of $1, else nothing
+  local d="$1" z best=""
   for z in "${ZONES[@]}"; do
-    if [ "$d" = "$z" ] || [ "${d%.$z}" != "$d" ]; then printf '%s' "$z"; return; fi
+    if [ "$d" = "$z" ] || [ "${d%.$z}" != "$d" ]; then
+      [ ${#z} -gt ${#best} ] && best="$z"
+    fi
   done
+  printf '%s' "$best"
 }
 
 cf_upsert() { # cf_upsert <fqdn> <zone> <type> <content>
