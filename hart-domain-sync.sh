@@ -90,7 +90,7 @@ cf() { # cf <METHOD> <path> [json-body]
 }
 
 slug() { printf '%s' "$1" | tr 'A-Z' 'a-z' | tr '.' '-' | tr -cd 'a-z0-9-'; }
-regex_escape() { printf '%s' "$1" | sed 's/\./\\./g'; }
+regex_escape() { printf '%s' "$1" | sed 's/\./\\\\./g'; }
 
 fast_remove() { # fast_remove <domain>: delete the per-domain router without fetching hart
   local domain="$1" s f key changed
@@ -372,7 +372,7 @@ if [ -n "$WILDCARD_DOMAIN" ] && [ "$NEEDS_WILDCARD" = "1" ]; then
 http:
   routers:
     hart-${WILD_SLUG}-wildcard:
-      rule: "HostRegexp(\`^.+\\.$REGEX$\`)"
+      rule: "HostRegexp(\`^.+\\\\.$REGEX$\`)"
       entryPoints: [$ENTRYPOINT]
       service: hart-$WILD_SLUG
       tls:
