@@ -45,6 +45,7 @@ MANAGE_DNS="${MANAGE_DNS:-1}"                   # 0 = don't touch Cloudflare DNS
 WILDCARD_DOMAIN="${WILDCARD_DOMAIN:-}"          # e.g. hart.intrane.fr — write one Host(\`*.hart.intrane.fr\`) router for all subdomains
 WILDCARD_INSTANCE_DOMAIN="${WILDCARD_INSTANCE_DOMAIN:-}"  # e.g. hart.intrane.fr — subdomains are covered by an external wildcard router/DNS; skip per-domain files
 PREFIX="hart-"
+REAL_DEST="$DEST"                               # original destination, even if file mode stages elsewhere
 AUTH_TOKEN="${HART_ADMIN_TOKEN:-${HART_TOKEN:-}}"  # send Authorization if the hart instance requires a token
 
 if [ "$MANAGE_DNS" = "1" ] && [ -z "$BOX_IP" ]; then
@@ -134,12 +135,18 @@ PYREM
       log "remove: $s not present (fast remove for $domain)"
     fi
   fi
+
+  # In file mode, an inert per-domain file may still be sitting in the watched directory
+  # from a previous directory-mode run; clean it up so the remove is complete.
+  if [ "$TRAEFIK_MODE" = "file" ] && [ -n "$REAL_DEST" ] && [ -e "$REAL_DEST/$s" ]; then
+    rm -f "$REAL_DEST/$s" && log "removed: stale $s from $REAL_DEST (fast remove for $domain)" || log "WARN: failed to remove stale $s from $REAL_DEST"
+  fi
+
   log "fast remove complete: $domain"
 }
 
-under_wildcard() { # true if $1 is a subdomain (or the same host) of $WILDCARD_DOMAIN
+under_wildcard() { # true if $1 is a strict subdomain of $WILDCARD_DOMAIN
   [ -n "$WILDCARD_DOMAIN" ] || return 1
-  [ "$1" = "$WILDCARD_DOMAIN" ] && return 0
   case "$1" in *".$WILDCARD_DOMAIN") return 0 ;; esac
   return 1
 }
@@ -246,11 +253,14 @@ if [ "$MANAGE_DNS" = "1" ] && [ -n "$CF_EMAIL" ] && [ -n "$CF_KEY" ]; then
   fi
 fi
 
-zone_for() { # echo the whitelist zone that is a suffix of $1, else nothing
-  local d="$1" z
+zone_for() { # echo the most specific whitelist zone that is a suffix of $1, else nothing
+  local d="$1" z best=""
   for z in "${ZONES[@]}"; do
-    if [ "$d" = "$z" ] || [ "${d%.$z}" != "$d" ]; then printf '%s' "$z"; return; fi
+    if [ "$d" = "$z" ] || [ "${d%.$z}" != "$d" ]; then
+      [ ${#z} -gt ${#best} ] && best="$z"
+    fi
   done
+  printf '%s' "$best"
 }
 
 cf_upsert() { # cf_upsert <fqdn> <zone> <type> <content>
