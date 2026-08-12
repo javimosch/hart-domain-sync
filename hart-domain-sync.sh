@@ -21,6 +21,7 @@ set -uo pipefail
 # Config file (also loaded by the systemd unit's EnvironmentFile) — sourced here too so the
 # HART_DOMAIN_HOOK path gets the same settings as the timer. Simple KEY=value, operator-owned.
 CONF="${DOMAIN_SYNC_ENV:-/etc/hart/domain-sync.env}"
+# shellcheck source=/dev/null
 [ -f "$CONF" ] && . "$CONF"
 
 HART_URL="${HART_URL:-http://127.0.0.1:8799}"   # hart daemon (default local)
@@ -47,6 +48,11 @@ WILDCARD_INSTANCE_DOMAIN="${WILDCARD_INSTANCE_DOMAIN:-}"  # e.g. hart.intrane.fr
 PREFIX="hart-"
 REAL_DEST="$DEST"                               # original destination, even if file mode stages elsewhere
 AUTH_TOKEN="${HART_ADMIN_TOKEN:-${HART_TOKEN:-}}"  # send Authorization if the hart instance requires a token
+
+# DNS/HTTP hostnames are case-insensitive; normalise wildcard inputs so
+# mixed-case hart domains still match the configured wildcard.
+WILDCARD_DOMAIN="$(printf '%s' "$WILDCARD_DOMAIN" | tr 'A-Z' 'a-z')"
+WILDCARD_INSTANCE_DOMAIN="$(printf '%s' "$WILDCARD_INSTANCE_DOMAIN" | tr 'A-Z' 'a-z')"
 
 if [ "$MANAGE_DNS" = "1" ] && [ -z "$BOX_IP" ]; then
   log_early() { echo "$(date -u +%H:%M:%S) [hart-domain-sync] $*" >&2; }
@@ -213,7 +219,7 @@ RESP="$(curl -s --max-time 10 "${CURL_AUTH[@]}" "$HART_URL/v1/domain")" \
   || { log "cannot reach hart at $HART_URL — abort (no prune)"; exit 1; }
 echo "$RESP" | jq -e '.ok==true' >/dev/null 2>&1 \
   || { log "unexpected hart response — abort (no prune): $(printf '%.120s' "$RESP")"; exit 1; }
-mapfile -t DOMAINS < <(echo "$RESP" | jq -r '.domains[]?.domain' | grep -E '^[a-z0-9.-]+$' || true)
+mapfile -t DOMAINS < <(echo "$RESP" | jq -r '.domains[]?.domain' | tr 'A-Z' 'a-z' | grep -E '^[a-z0-9.-]+$' || true)
 
 # In file mode the per-domain files are only an intermediate representation: generate
 # them into a scratch dir with the existing logic, then merge into $SINGLE_FILE. That

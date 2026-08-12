@@ -66,3 +66,16 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
 - The current codebase already contains all fixes for issue #1 (fast `HART_DOMAIN_HOOK remove`, `WILDCARD_INSTANCE_DOMAIN`, most-specific Cloudflare zone, file-mode inert cleanup, `cf_val()` env-file parsing, hook log-dir creation).
 - Next step: QA runs the manual verification gate (dry-runs for `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, and `--remove` in both directory and file modes) and `shellcheck` if installed.
 - If QA finds a new bug, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the original objective is resolved.
+
+## 2026-08-12 architect plan (am-add074-dkn1zmbpr35b-e5e31d75)
+
+- `gh issue list --state open` returned `[]`; issue #1 remains CLOSED on `origin/master`.
+- `gh pr list --state open` shows only PR #14 (`am/am-add074-dkn13g7iod3q-9a485f95`). That branch contains a real `fix(sync): lower-case hart domains and wildcard inputs` change, but it is bundled with a stale `docs(agents)` plan and its title does not match the code diff. PR #14 should be superseded by a clean, self-contained PR from the current branch.
+- Dev should land one small conventional commit on this branch:
+  1. `fix(sync): lower-case hart domains and wildcard inputs` — normalize `WILDCARD_DOMAIN` and `WILDCARD_INSTANCE_DOMAIN` to lowercase after the config is sourced, and lower-case hart-fetched domains before the `grep` filter and wildcard matching, so mixed-case hart entries are not silently dropped and uppercase wildcard env values still match.
+- QA runs the verification gate after the dev commit:
+  - `bash -n hart-domain-sync.sh hart-domain-hook.sh`
+  - `shellcheck hart-domain-sync.sh hart-domain-hook.sh` (if installed)
+  - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, and `--remove`
+  - regression tests for the new fix: mixed-case hart domain entries, uppercase `WILDCARD_DOMAIN`/`WILDCARD_INSTANCE_DOMAIN` values, and confirm the generated Traefik rule and DNS target are lowercase.
+- If QA finds a bug, dev fixes it in a focused commit; if the gate passes, close PR #14 as superseded and the original objective is resolved.
