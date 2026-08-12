@@ -55,3 +55,14 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
 - Open PR #10 (CF_ENV parsing / hook log-dir) and PR #11 (docs noting PR #10) are already present on `origin/master` and superseded; they should be closed as superseded.
 - Next step: QA runs the verification gate (`bash -n`, `shellcheck` if available, manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, and `--remove`).
 - If QA finds a new bug, open a focused issue and produce one small conventional-commit PR; otherwise the original objective is resolved.
+
+## 2026-08-12 architect plan (am-add074-dkn07a9q0gcb-61a8777a)
+
+- `gh issue list --state open` returned `[]`; no open GitHub issues to fix.
+- `gh pr list --state open` returned `[]`; stale PRs #2/#3/#4/#6/#10/#11 are already closed/superseded.
+- `git status` is clean and the branch is at `origin/master` (commit `71ecd69`).
+- `bash -n hart-domain-sync.sh hart-domain-hook.sh` passes.
+- `shellcheck` is not installed in this environment; QA should run it if available on the target host.
+- The current codebase already contains all fixes for issue #1 (fast `HART_DOMAIN_HOOK remove`, `WILDCARD_INSTANCE_DOMAIN`, most-specific Cloudflare zone, file-mode inert cleanup, `cf_val()` env-file parsing, hook log-dir creation).
+- Next step: QA runs the manual verification gate (dry-runs for `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, and `--remove` in both directory and file modes) and `shellcheck` if installed.
+- If QA finds a new bug, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the original objective is resolved.
