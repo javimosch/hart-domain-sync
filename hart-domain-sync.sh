@@ -467,13 +467,19 @@ for sec in SECTIONS:
 # a real misconfiguration -- Traefik warns and which one wins is not something we get to
 # choose -- so if another tool already routes a host, it keeps it and we skip that domain.
 # This is the mirror of hotify's "owner wins": whoever is already there is the owner.
+def qstrip(s):
+    s = s.strip()
+    if (s.startswith('"') and s.endswith('"')) or (s.startswith("'") and s.endswith("'")):
+        return s[1:-1].strip()
+    return s
+
 def host_rules(sections):
     rules = {}
     for name, block in (sections.get("routers") or {}).items():
         for line in block.split("\n"):
             t = line.strip()
             if t.startswith("rule:"):
-                rules.setdefault(t[5:].strip(), name)
+                rules.setdefault(qstrip(t[5:]), name)
                 break
     return rules
 
