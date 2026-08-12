@@ -22,3 +22,13 @@ Existing open PRs #2, #3, and #4 already attempt overlapping changes for the sam
 ## Conventions
 - Do not commit `.devin/`, `.claude/`, or `.am-summary` files.
 - Use Conventional Commits; reference `Fixes #1` when the change resolves that issue.
+
+## 2026-08-12 run notes
+
+- GitHub issue #1 is already **CLOSED**. The fast `HART_DOMAIN_HOOK remove` cleanup and `WILDCARD_INSTANCE_DOMAIN` support are implemented on `origin/master`.
+- Open PRs #2, #3, #4, and #6 are stale/overlapping; they should be closed or superseded by the current branch.
+- This run added three small `fix(sync)` edge-case commits to `hart-domain-sync.sh`:
+  1. `zone_for()` now picks the most specific (longest) Cloudflare zone.
+  2. `under_wildcard()` no longer swallows the `WILDCARD_DOMAIN` apex.
+  3. File-mode `--remove` also cleans up any inert `hart-<slug>.yml` in the watched directory.
+- Verification gate for these changes: `bash -n hart-domain-sync.sh hart-domain-hook.sh`, `shellcheck` (if installed), and manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, and `--remove`.
