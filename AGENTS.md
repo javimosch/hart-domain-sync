@@ -32,3 +32,11 @@ Existing open PRs #2, #3, and #4 already attempt overlapping changes for the sam
   2. `under_wildcard()` no longer swallows the `WILDCARD_DOMAIN` apex.
   3. File-mode `--remove` also cleans up any inert `hart-<slug>.yml` in the watched directory.
 - Verification gate for these changes: `bash -n hart-domain-sync.sh hart-domain-hook.sh`, `shellcheck` (if installed), and manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, and `--remove`.
+
+## 2026-08-12 architect plan (am-add074-dkmwpqql95xu-31fa60e0)
+
+- GitHub issue list is empty; issue #1 is already CLOSED on `origin/master`.
+- The current branch is at the latest `origin/master` and already contains the fast `--remove` cleanup, `WILDCARD_INSTANCE_DOMAIN` support, most-specific Cloudflare zone selection, and file-mode inert cleanup.
+- Open PRs #2, #3, #4, and #6 implement overlapping aspects of issue #1 and are now stale; they should be closed or superseded.
+- Next step: QA runs the verification gate (`bash -n`, `shellcheck` if available, manual dry-runs for `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, and `--remove` in both directory and file modes).
+- If a new bug is found during verification, open a focused issue and produce one small conventional-commit PR; otherwise the original objective is resolved.
