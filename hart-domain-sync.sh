@@ -65,7 +65,20 @@ if [ "${1:-}" = "--remove" ]; then
 fi
 
 # CF creds: extract (don't source — env files can carry chars bash chokes on).
-cf_val() { grep -i "^$1=" "$CF_ENV" 2>/dev/null | head -1 | cut -d= -f2- | tr -d '"'"'"' ' | tr -d "'"; }
+# Tolerates optional "export" prefix, whitespace around "=", and leading/trailing
+# quotes while preserving embedded spaces and any "=" inside the value.
+cf_val() {
+  local key="$1" line value
+  [ -f "$CF_ENV" ] || return
+  line=$(grep -i "^[[:space:]]*\(export[[:space:]]\{1,\}\)\{0,1\}${key}[[:space:]]*=" "$CF_ENV" 2>/dev/null | head -1) || true
+  [ -n "$line" ] || return
+  value="${line#*=}"
+  value="${value#"${value%%[![:space:]]*}"}"
+  value="${value%"${value##*[![:space:]]}"}"
+  value="${value#\"}"; value="${value%\"}"
+  value="${value#\'}"; value="${value%\'}"
+  printf '%s\n' "$value"
+}
 CF_EMAIL="$(cf_val CF_API_EMAIL)"
 CF_KEY="$(cf_val CF_API_KEY)"
 
