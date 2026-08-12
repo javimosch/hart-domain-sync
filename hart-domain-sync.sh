@@ -21,6 +21,7 @@ set -uo pipefail
 # Config file (also loaded by the systemd unit's EnvironmentFile) — sourced here too so the
 # HART_DOMAIN_HOOK path gets the same settings as the timer. Simple KEY=value, operator-owned.
 CONF="${DOMAIN_SYNC_ENV:-/etc/hart/domain-sync.env}"
+# shellcheck source=/dev/null
 [ -f "$CONF" ] && . "$CONF"
 
 HART_URL="${HART_URL:-http://127.0.0.1:8799}"   # hart daemon (default local)
