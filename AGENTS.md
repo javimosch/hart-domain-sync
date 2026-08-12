@@ -16,8 +16,8 @@ There is no configured test harness. Before any PR, run:
 - Manual dry-run in a temp `DEST` / `SINGLE_FILE` for directory or file mode.
 
 ## Current objective context
-Open issue #1: fast `HART_DOMAIN_HOOK remove` cleanup + `WILDCARD_INSTANCE_DOMAIN` support so externally-managed wildcard subdomains are skipped.
-Existing open PRs #2, #3, and #4 already attempt overlapping changes for the same issue; new work should implement from the current base and not rely on those unmerged branches.
+GitHub issue #1 is CLOSED and its implementation (fast `HART_DOMAIN_HOOK remove` cleanup + `WILDCARD_INSTANCE_DOMAIN` support) is already on `origin/master`.
+PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and have now been closed as superseded by the current branch.
 
 ## Conventions
 - Do not commit `.devin/`, `.claude/`, or `.am-summary` files.
