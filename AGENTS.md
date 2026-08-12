@@ -48,3 +48,10 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
 - Added two small fixes:
   1. `cf_val()` now accepts `export KEY=value`, whitespace around `=`, and embedded spaces in values.
   2. `hart-domain-hook.sh` creates the log directory before appending to `HART_DOMAIN_SYNC_LOG`.
+
+## 2026-08-12 architect plan (am-add074-dkmzco5toac0-f41ee3c9)
+
+- GitHub issue list is empty; issue #1 remains CLOSED on `origin/master`.
+- Open PR #10 (CF_ENV parsing / hook log-dir) and PR #11 (docs noting PR #10) are already present on `origin/master` and superseded; they should be closed as superseded.
+- Next step: QA runs the verification gate (`bash -n`, `shellcheck` if available, manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, and `--remove`).
+- If QA finds a new bug, open a focused issue and produce one small conventional-commit PR; otherwise the original objective is resolved.
