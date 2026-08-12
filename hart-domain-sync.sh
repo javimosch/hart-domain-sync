@@ -137,9 +137,8 @@ PYREM
   log "fast remove complete: $domain"
 }
 
-under_wildcard() { # true if $1 is a subdomain (or the same host) of $WILDCARD_DOMAIN
+under_wildcard() { # true if $1 is a strict subdomain of $WILDCARD_DOMAIN
   [ -n "$WILDCARD_DOMAIN" ] || return 1
-  [ "$1" = "$WILDCARD_DOMAIN" ] && return 0
   case "$1" in *".$WILDCARD_DOMAIN") return 0 ;; esac
   return 1
 }
