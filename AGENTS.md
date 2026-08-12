@@ -66,3 +66,29 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
 - The current codebase already contains all fixes for issue #1 (fast `HART_DOMAIN_HOOK remove`, `WILDCARD_INSTANCE_DOMAIN`, most-specific Cloudflare zone, file-mode inert cleanup, `cf_val()` env-file parsing, hook log-dir creation).
 - Next step: QA runs the manual verification gate (dry-runs for `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, and `--remove` in both directory and file modes) and `shellcheck` if installed.
 - If QA finds a new bug, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the original objective is resolved.
+
+## 2026-08-12 architect plan (am-add074-dkn2vrrxvj2y-56e25c4f)
+
+- `gh issue list --state open` returned `[]`; issue #1 remains CLOSED on `origin/master`.
+- `gh pr list --state open` shows PR #14 and PR #15, both prototypes of the same `fix(sync): lower-case hart domains and wildcard inputs` change, bundled with stale `docs(agents)` plan notes and with titles that do not reflect the code diff. They should be closed/superseded by a clean, self-contained PR from the current branch.
+- The latent bug is real: the script currently rejects mixed-case hart domains in the `grep` filter and performs case-sensitive `WILDCARD_DOMAIN` / `WILDCARD_INSTANCE_DOMAIN` matching, so uppercase wildcard env values or mixed-case hart entries fail to match or are silently dropped.
+- Dev should land one focused `fix(sync): lower-case hart domains and wildcard inputs` commit:
+  1. Open a focused GitHub issue describing the mixed-case normalization bug and reference it with `Fixes #<issue>` in the commit body.
+  2. Normalize `WILDCARD_DOMAIN` and `WILDCARD_INSTANCE_DOMAIN` to lowercase after the config is sourced.
+  3. Lower-case the hart-fetched domain list before the `grep` filter and wildcard matching so mixed-case hart entries are preserved and matched.
+  4. Add the `shellcheck source=/dev/null` directive above the intentionally sourced config line.
+- QA runs the verification gate:
+  - `bash -n hart-domain-sync.sh hart-domain-hook.sh`
+  - `shellcheck hart-domain-sync.sh hart-domain-hook.sh` (if installed)
+  - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, and `--remove`
+  - regression tests for this fix: mixed-case hart domain entries, uppercase `WILDCARD_DOMAIN`/`WILDCARD_INSTANCE_DOMAIN` values, and confirm the generated Traefik Host rule and DNS target are lowercase.
+- If the gate passes, close PR #14 and PR #15 as superseded and the original objective is resolved.
+
+## 2026-08-12 dev run notes (am-add074-dkn2vrrxvj2y-56e25c4f)
+
+- Opened focused GitHub issue #16 for the mixed-case hart domain / wildcard env value normalisation bug.
+- Landed three small conventional commits:
+  1. `chore(sync): add shellcheck source directive for dynamic config file`.
+  2. `fix(sync): lower-case hart domains and wildcard inputs` (Fixes #16).
+  3. `fix(sync): strip trailing slash from HART_URL and SERVICE_URL` (Fixes #16).
+- PRs #14 and #15 should be closed as superseded by this clean, self-contained branch.
