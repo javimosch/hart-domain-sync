@@ -117,9 +117,11 @@ CF_KEY="$(cf_val CF_API_KEY)"
 
 cf() { # cf <METHOD> <path> [json-body]
   local m="$1" p="$2" d="${3:-}"
-  curl -s --max-time 15 -X "$m" "https://api.cloudflare.com/client/v4$p" \
+  local -a args=(-s --max-time 15 -X "$m" "https://api.cloudflare.com/client/v4$p" \
     -H "X-Auth-Email: $CF_EMAIL" -H "X-Auth-Key: $CF_KEY" \
-    -H "Content-Type: application/json" ${d:+--data "$d"}
+    -H "Content-Type: application/json")
+  [ -n "$d" ] && args+=(--data "$d")
+  curl "${args[@]}"
 }
 
 slug() { printf '%s' "$1" | LC_ALL=C tr '[:upper:]' '[:lower:]' | tr '.' '-' | LC_ALL=C tr -cd 'a-z0-9-'; }
@@ -201,13 +203,13 @@ PYREM
 
 under_wildcard() { # true if $1 is a strict subdomain of $WILDCARD_DOMAIN
   [ -n "$WILDCARD_DOMAIN" ] || return 1
-  case "$1" in *".$WILDCARD_DOMAIN") return 0 ;; esac
+  case "$1" in *".${WILDCARD_DOMAIN}") return 0 ;; esac
   return 1
 }
 
 under_wildcard_instance() { # true if $1 is a strict subdomain of $WILDCARD_INSTANCE_DOMAIN (external wildcard)
   [ -n "$WILDCARD_INSTANCE_DOMAIN" ] || return 1
-  case "$1" in *".$WILDCARD_INSTANCE_DOMAIN") return 0 ;; esac
+  case "$1" in *".${WILDCARD_INSTANCE_DOMAIN}") return 0 ;; esac
   return 1
 }
 
@@ -310,9 +312,15 @@ fi
 zone_for() { # echo the most specific whitelist zone that is a suffix of $1, else nothing
   local d="$1" z best=""
   for z in "${ZONES[@]}"; do
-    if [ "$d" = "$z" ] || [ "${d%."$z"}" != "$d" ]; then
+    if [ "$d" = "$z" ]; then
       [ ${#z} -gt ${#best} ] && best="$z"
+      continue
     fi
+    case "$d" in
+      *".${z}")
+        [ ${#z} -gt ${#best} ] && best="$z"
+        ;;
+    esac
   done
   printf '%s' "$best"
 }
