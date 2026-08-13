@@ -104,6 +104,7 @@ cf_val() {
   [ -f "$CF_ENV" ] || return
   line=$(grep -i "^[[:space:]]*\(export[[:space:]]\{1,\}\)\{0,1\}${key}[[:space:]]*=" "$CF_ENV" 2>/dev/null | head -1) || true
   [ -n "$line" ] || return
+  line="$(printf '%s' "$line" | LC_ALL=C tr -d '\r')"
   value="${line#*=}"
   value="$(strip_env_comment "$value")"
   value="${value#"${value%%[![:space:]]*}"}"
