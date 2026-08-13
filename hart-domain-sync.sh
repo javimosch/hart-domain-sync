@@ -202,9 +202,9 @@ under_wildcard_instance() { # true if $1 is a strict subdomain of $WILDCARD_INST
 # resolve the provider layout before touching anything
 if [ "$TRAEFIK_MODE" = "auto" ]; then
   if [ -r "$TRAEFIK_MAIN" ] && awk '/^providers:/{p=1} p&&/^[[:space:]]+file:/{f=1} f&&/directory:/{print "d";exit} f&&/filename:/{print "f";exit}' "$TRAEFIK_MAIN" | grep -q d; then
-    TRAEFIK_MODE=directory
+    TRAEFIK_MODE="directory"
   else
-    TRAEFIK_MODE=file
+    TRAEFIK_MODE="file"
   fi
   log "traefik mode: $TRAEFIK_MODE (detected from $TRAEFIK_MAIN)"
 fi
