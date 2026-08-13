@@ -288,7 +288,7 @@ ZONES=()
 if [ "$MANAGE_DNS" = "1" ] && [ -n "$CF_EMAIL" ] && [ -n "$CF_KEY" ]; then
   ZRESP="$(cf GET '/zones?per_page=50&status=active')"
   if echo "$ZRESP" | jq -e '.success==true' >/dev/null 2>&1; then
-    mapfile -t ZONES < <(echo "$ZRESP" | jq -r '.result[].name')
+    mapfile -t ZONES < <(echo "$ZRESP" | jq -r '.result[].name' | LC_ALL=C tr '[:upper:]' '[:lower:]')
     log "CF zones (whitelist): ${#ZONES[@]}"
   else
     log "CF zones fetch failed — DNS automation skipped this run"
