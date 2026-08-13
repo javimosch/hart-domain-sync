@@ -157,3 +157,27 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
   - regression tests for the new fixes: `HART_URL`/`SERVICE_URL` with multiple trailing slashes, hook `remove` with empty domain, and `cf_upsert` with a record name or content containing quotes/special characters
   - confirm generated Traefik `Host()` / `HostRegexp()` rules and Cloudflare DNS targets are lowercase
 - If the gate passes, close PR #25 as superseded and the original objective is resolved. If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR.
+
+## 2026-08-13 architect plan (am-add074-dknxszx93wzf-9932186f)
+
+- `gh issue list --state open` returns `[]`; issues #1, #16, and #17 are CLOSED. No open GitHub issues remain to fix.
+- `gh pr list --state open` returns only PR #27 (`am/am-add074-dknwwukg17q4-1f14af53`), which bundled three unmerged robustness fixes for `hart-domain-sync.sh`.
+- Dev has already landed the same three fixes as clean, separate conventional commits on this branch:
+  1. `fix(cf): strip carriage returns from Cloudflare credential env values` — removes `\r` from the parsed credential value in `cf_val()` before it is sent in the Cloudflare auth headers.
+  2. `fix(sync): ignore commented lines when auto-detecting Traefik file provider mode` — skips `^[[:space:]]*#` comment lines in the `awk` parser, and allows `directory:`/`filename:` with or without leading whitespace, so a commented-out or differently-indented Traefik provider example does not mis-detect the mode.
+  3. `fix(sync): trim whitespace and cr from urls and wildcard inputs` — adds a `trim()` helper that strips carriage returns and leading/trailing whitespace, and uses it for `HART_URL`, `SERVICE_URL`, `WILDCARD_DOMAIN`, and `WILDCARD_INSTANCE_DOMAIN` before validation, lowercasing, and wildcard matching.
+- These three commits supersede the bundled `AGENTS.md`+code PR #27; PR #27 should be closed as superseded.
+- QA runs the verification gate:
+  - `bash -n hart-domain-sync.sh hart-domain-hook.sh`
+  - `shellcheck hart-domain-sync.sh hart-domain-hook.sh` (if installed)
+  - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, and `--remove`
+  - regression tests for the new fixes:
+    - `HART_URL` / `SERVICE_URL` with leading/trailing whitespace, CRs, and multiple trailing slashes
+    - `WILDCARD_DOMAIN` / `WILDCARD_INSTANCE_DOMAIN` with whitespace and uppercase letters
+    - `CF_ENV` with CRLF line endings
+    - `TRAEFIK_MAIN` with commented `directory:` / `filename:` lines and unindented provider keys
+  - edge-case checks:
+    - `--remove <domain>` with leading/trailing whitespace or mixed case; if per-domain files or DNS records are not found, open a focused issue to add `REMOVE_DOMAIN` trimming
+    - run with a non-C locale (e.g. `LC_ALL=fr_FR.UTF-8`) and confirm `trim()` still removes leading/trailing whitespace; if not, add `LC_ALL=C` to the `sed`/`tr` calls
+  - confirm generated Traefik `Host()` / `HostRegexp()` rules and Cloudflare DNS targets are lowercase
+- If the gate passes, close PR #27 as superseded and the original objective is resolved. If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR.
