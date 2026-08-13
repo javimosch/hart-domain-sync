@@ -12,7 +12,13 @@ if ! mkdir -p "$LOG_DIR" 2>/dev/null || [ ! -w "$LOG_DIR" ]; then
 fi
 [ -x "$SYNC" ] || { printf '%s\n' "HART_DOMAIN_SYNC not found or not executable: $SYNC" >>"$LOG"; exit 1; }
 case "${1:-}" in
-  remove) nohup "$SYNC" --remove "${2:-}" >>"$LOG" 2>&1 & ;;
+  remove)
+    if [ -z "${2:-}" ]; then
+      printf '%s\n' "hart-domain-hook: missing domain for remove" >>"$LOG"
+      exit 1
+    fi
+    nohup "$SYNC" --remove "${2:-}" >>"$LOG" 2>&1 &
+    ;;
   *)      nohup "$SYNC" >>"$LOG" 2>&1 & ;;
 esac
 exit 0
