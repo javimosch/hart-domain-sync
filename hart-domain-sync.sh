@@ -176,7 +176,11 @@ PYREM
   else
     f="$DEST/$s"
     if [ -e "$f" ]; then
-      rm -f "$f" && log "removed: $s (fast remove for $domain)" || log "WARN: failed to remove $s"
+      if rm -f "$f"; then
+        log "removed: $s (fast remove for $domain)"
+      else
+        log "WARN: failed to remove $s"
+      fi
     else
       log "remove: $s not present (fast remove for $domain)"
     fi
@@ -185,7 +189,11 @@ PYREM
   # In file mode, an inert per-domain file may still be sitting in the watched directory
   # from a previous directory-mode run; clean it up so the remove is complete.
   if [ "$TRAEFIK_MODE" = "file" ] && [ -n "$REAL_DEST" ] && [ -e "$REAL_DEST/$s" ]; then
-    rm -f "$REAL_DEST/$s" && log "removed: stale $s from $REAL_DEST (fast remove for $domain)" || log "WARN: failed to remove stale $s from $REAL_DEST"
+    if rm -f "$REAL_DEST/$s"; then
+      log "removed: stale $s from $REAL_DEST (fast remove for $domain)"
+    else
+      log "WARN: failed to remove stale $s from $REAL_DEST"
+    fi
   fi
 
   log "fast remove complete: $domain"
@@ -316,11 +324,17 @@ cf_upsert() { # cf_upsert <fqdn> <zone> <type> <content>
   body="{\"type\":\"$t\",\"name\":\"$d\",\"content\":\"$c\",\"ttl\":120,\"proxied\":false}"
   rid="$(cf GET "/zones/$zid/dns_records?type=$t&name=$d" | jq -r '.result[0].id // empty')"
   if [ -n "$rid" ]; then
-    cf PUT "/zones/$zid/dns_records/$rid" "$body" | jq -e '.success==true' >/dev/null 2>&1 \
-      && log "DNS: $t $d -> $c (updated)" || log "DNS: $t update failed for $d"
+    if cf PUT "/zones/$zid/dns_records/$rid" "$body" | jq -e '.success==true' >/dev/null 2>&1; then
+      log "DNS: $t $d -> $c (updated)"
+    else
+      log "DNS: $t update failed for $d"
+    fi
   else
-    cf POST "/zones/$zid/dns_records" "$body" | jq -e '.success==true' >/dev/null 2>&1 \
-      && log "DNS: $t $d -> $c (created)" || log "DNS: $t create failed for $d"
+    if cf POST "/zones/$zid/dns_records" "$body" | jq -e '.success==true' >/dev/null 2>&1; then
+      log "DNS: $t $d -> $c (created)"
+    else
+      log "DNS: $t create failed for $d"
+    fi
   fi
 }
 
