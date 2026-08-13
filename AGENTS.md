@@ -141,3 +141,19 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
   - regression tests for the robustness fixes now in master: a JSON body containing spaces/special characters, `zone_for()` with zone names containing glob-like characters, trailing-slash `HART_URL`/`SERVICE_URL`, and uppercase wildcard inputs
   - confirm generated Traefik `Host()` / `HostRegexp()` rules and Cloudflare DNS targets are lowercase
 - If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the original objective is resolved, close PR #21 as superseded, and no further action is needed.
+
+## 2026-08-13 architect plan (am-add074-dknug13ql7lh-39b8ae4b)
+
+- `gh issue list --state open` returns `[]`; issues #1, #16, and #17 are CLOSED. No open GitHub issues remain to fix.
+- `gh pr list --state open` returns only PR #25 (`am/am-add074-dkntjvjpixt5-e9b01c3a`). Its code changes are three real, unmerged robustness fixes that are not yet on `origin/master` (`1164718`):
+  1. `fix(sync): strip all trailing slashes from HART_URL and SERVICE_URL` — replace the single `${var%/}` with a `while [[ ... == */ ]]` loop so values like `http://127.0.0.1:8799//` become clean base URLs.
+  2. `fix(hook): validate remove argument before dispatching` — in `hart-domain-hook.sh`, reject `remove` events with an empty domain before calling `hart-domain-sync --remove ""`.
+  3. `fix(cf): build Cloudflare record JSON with jq` — in `cf_upsert()`, use `jq -n --arg/--argjson` to escape record name/type/content safely.
+- Dev should land these as three clean, separate conventional commits on this branch; do not bundle the stale `AGENTS.md` section from PR #25.
+- QA runs the verification gate:
+  - `bash -n hart-domain-sync.sh hart-domain-hook.sh`
+  - `shellcheck hart-domain-sync.sh hart-domain-hook.sh` (if installed)
+  - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, and `--remove`
+  - regression tests for the new fixes: `HART_URL`/`SERVICE_URL` with multiple trailing slashes, hook `remove` with empty domain, and `cf_upsert` with a record name or content containing quotes/special characters
+  - confirm generated Traefik `Host()` / `HostRegexp()` rules and Cloudflare DNS targets are lowercase
+- If the gate passes, close PR #25 as superseded and the original objective is resolved. If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR.
