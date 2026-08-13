@@ -302,7 +302,7 @@ fi
 zone_for() { # echo the most specific whitelist zone that is a suffix of $1, else nothing
   local d="$1" z best=""
   for z in "${ZONES[@]}"; do
-    if [ "$d" = "$z" ] || [ "${d%.$z}" != "$d" ]; then
+    if [ "$d" = "$z" ] || [ "${d%."$z"}" != "$d" ]; then
       [ ${#z} -gt ${#best} ] && best="$z"
     fi
   done
