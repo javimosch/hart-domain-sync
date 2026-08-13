@@ -128,3 +128,16 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
   - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, and `--remove`
   - regression tests for the two new fixes: a JSON body containing spaces/special characters, and `zone_for()` with zone names that contain glob-like characters
 - If the gate passes, close PR #21 as superseded and the original objective is resolved. If QA finds a regression, open a focused GitHub issue and produce one small conventional-commit PR.
+
+## 2026-08-13 architect plan (am-add074-dknsg269nahy-53715114)
+
+- `gh issue list --state open` returns `[]`; issues #1, #16, and #17 are CLOSED. No open GitHub issues remain to fix.
+- `gh pr list --state open` returns only PR #21 (`am/am-add074-dknotw3vct3i-246c2c03`). Its `hart-domain-sync.sh` changes are now all present on `origin/master` (commit `ebd20ce`): the trailing-slash stripping of `HART_URL` and `SERVICE_URL`, the `&& log || log` to `if/else` refactor, the `zone_for()` `case`-pattern suffix check, and the `cf()` curl `args` array (the latter two via merged PR #23). PR #21 is merge-conflicting and stale; it should be closed as superseded without merging its bundled `AGENTS.md` plan.
+- The current branch `am/am-add074-dknsg269nahy-53715114` is at `origin/master` (`ebd20ce`) with a clean worktree; `bash -n hart-domain-sync.sh hart-domain-hook.sh` passes and `shellcheck` is not installed in this environment.
+- No additional code change is required to resolve the reported bugs. The next step is for QA to run the verification gate:
+  - `bash -n hart-domain-sync.sh hart-domain-hook.sh`
+  - `shellcheck hart-domain-sync.sh hart-domain-hook.sh` (if installed)
+  - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, and `--remove`
+  - regression tests for the robustness fixes now in master: a JSON body containing spaces/special characters, `zone_for()` with zone names containing glob-like characters, trailing-slash `HART_URL`/`SERVICE_URL`, and uppercase wildcard inputs
+  - confirm generated Traefik `Host()` / `HostRegexp()` rules and Cloudflare DNS targets are lowercase
+- If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the original objective is resolved, close PR #21 as superseded, and no further action is needed.
