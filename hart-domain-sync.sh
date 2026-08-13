@@ -312,9 +312,15 @@ fi
 zone_for() { # echo the most specific whitelist zone that is a suffix of $1, else nothing
   local d="$1" z best=""
   for z in "${ZONES[@]}"; do
-    if [ "$d" = "$z" ] || [ "${d%.$z}" != "$d" ]; then
+    if [ "$d" = "$z" ]; then
       [ ${#z} -gt ${#best} ] && best="$z"
+      continue
     fi
+    case "$d" in
+      *".${z}")
+        [ ${#z} -gt ${#best} ] && best="$z"
+        ;;
+    esac
   done
   printf '%s' "$best"
 }
