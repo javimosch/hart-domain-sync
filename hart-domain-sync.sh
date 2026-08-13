@@ -18,6 +18,8 @@
 # config file below — the built-in defaults are generic conventions, NOT host addresses.
 set -uo pipefail
 
+trim() { printf '%s' "$1" | LC_ALL=C sed 's/^[[:space:]]*//;s/[[:space:]]*$//'; }
+
 # Config file (also loaded by the systemd unit's EnvironmentFile) — sourced here too so the
 # HART_DOMAIN_HOOK path gets the same settings as the timer. Simple KEY=value, operator-owned.
 CONF="${DOMAIN_SYNC_ENV:-/etc/hart/domain-sync.env}"
@@ -41,6 +43,8 @@ BOX_IP6="${BOX_IP6:-}"                          # this box's public IPv6 (AAAA t
 SERVICE_URL="${SERVICE_URL:-http://127.0.0.1:8799}"   # how Traefik reaches hart
 # Remove any trailing slashes so the hart API call doesn't end up with a doubled
 # (or tripled) path separator, and the Traefik upstream URL is always a clean URL.
+HART_URL="$(trim "$HART_URL")"
+SERVICE_URL="$(trim "$SERVICE_URL")"
 while [[ "$HART_URL" == */ ]]; do HART_URL="${HART_URL%/}"; done
 while [[ "$SERVICE_URL" == */ ]]; do SERVICE_URL="${SERVICE_URL%/}"; done
 ENTRYPOINT="${ENTRYPOINT:-websecure}"           # Traefik TLS entrypoint name
@@ -55,8 +59,8 @@ AUTH_TOKEN="${HART_ADMIN_TOKEN:-${HART_TOKEN:-}}"  # send Authorization if the h
 
 # DNS/HTTP hostnames are case-insensitive; normalise wildcard inputs so
 # mixed-case hart domains still match the configured wildcard.
-WILDCARD_DOMAIN="$(printf '%s' "$WILDCARD_DOMAIN" | LC_ALL=C tr '[:upper:]' '[:lower:]')"
-WILDCARD_INSTANCE_DOMAIN="$(printf '%s' "$WILDCARD_INSTANCE_DOMAIN" | LC_ALL=C tr '[:upper:]' '[:lower:]')"
+WILDCARD_DOMAIN="$(trim "$WILDCARD_DOMAIN" | LC_ALL=C tr '[:upper:]' '[:lower:]')"
+WILDCARD_INSTANCE_DOMAIN="$(trim "$WILDCARD_INSTANCE_DOMAIN" | LC_ALL=C tr '[:upper:]' '[:lower:]')"
 
 if [ "$MANAGE_DNS" = "1" ] && [ -z "$BOX_IP" ]; then
   log_early() { echo "$(date -u +%H:%M:%S) [hart-domain-sync] $*" >&2; }
@@ -74,7 +78,7 @@ if [ "${1:-}" = "--remove" ]; then
   [ -n "$REMOVE_DOMAIN" ] || { log "usage: $0 [--remove <domain>]"; exit 1; }
   # DNS/HTTP hostnames are case-insensitive; keep the remove path consistent
   # with the lower-cased per-domain files generated in the reconcile loop.
-  REMOVE_DOMAIN="$(printf '%s' "$REMOVE_DOMAIN" | LC_ALL=C tr '[:upper:]' '[:lower:]')"
+  REMOVE_DOMAIN="$(trim "$REMOVE_DOMAIN" | LC_ALL=C tr '[:upper:]' '[:lower:]')"
 fi
 
 # CF creds: extract (don't source — env files can carry chars bash chokes on).
@@ -104,6 +108,7 @@ cf_val() {
   [ -f "$CF_ENV" ] || return
   line=$(grep -i "^[[:space:]]*\(export[[:space:]]\{1,\}\)\{0,1\}${key}[[:space:]]*=" "$CF_ENV" 2>/dev/null | head -1) || true
   [ -n "$line" ] || return
+  line="$(printf '%s' "$line" | LC_ALL=C tr -d '\r')"
   value="${line#*=}"
   value="$(strip_env_comment "$value")"
   value="${value#"${value%%[![:space:]]*}"}"
@@ -215,7 +220,7 @@ under_wildcard_instance() { # true if $1 is a strict subdomain of $WILDCARD_INST
 
 # resolve the provider layout before touching anything
 if [ "$TRAEFIK_MODE" = "auto" ]; then
-  if [ -r "$TRAEFIK_MAIN" ] && awk '/^providers:/{p=1} p&&/^[[:space:]]+file:/{f=1} f&&/directory:/{print "d";exit} f&&/filename:/{print "f";exit}' "$TRAEFIK_MAIN" | grep -q d; then
+  if [ -r "$TRAEFIK_MAIN" ] && awk '/^[[:space:]]*#/{next} /^providers:/{p=1} p&&/^[[:space:]]+file:/{f=1} f&&/directory:/{print "d";exit} f&&/filename:/{print "f";exit}' "$TRAEFIK_MAIN" | grep -q d; then
     TRAEFIK_MODE="directory"
   else
     TRAEFIK_MODE="file"

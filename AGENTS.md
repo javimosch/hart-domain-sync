@@ -157,3 +157,24 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
   - regression tests for the new fixes: `HART_URL`/`SERVICE_URL` with multiple trailing slashes, hook `remove` with empty domain, and `cf_upsert` with a record name or content containing quotes/special characters
   - confirm generated Traefik `Host()` / `HostRegexp()` rules and Cloudflare DNS targets are lowercase
 - If the gate passes, close PR #25 as superseded and the original objective is resolved. If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR.
+
+## 2026-08-13 architect plan (am-add074-dknwwukg17q4-1f14af53)
+
+- `gh issue list --state open` returns `[]`; issues #1, #16, and #17 are CLOSED. No open GitHub issues remain to fix.
+- `gh pr list --state open` returns `[]`; PR #26 is MERGED into `origin/master` and no stale open PRs remain.
+- The current branch `am/am-add074-dknwwukg17q4-1f14af53` is at the same commit as `origin/master` (`808a600`), which contains all previously landed fixes:
+  - fast `HART_DOMAIN_HOOK remove` cleanup and `WILDCARD_INSTANCE_DOMAIN` support,
+  - lower-case normalization of hart domains and wildcard inputs,
+  - most-specific Cloudflare zone selection,
+  - `cf()` curl args array for safe JSON quoting,
+  - `cf_upsert()` JSON built with jq,
+  - hook remove-argument validation.
+- `bash -n hart-domain-sync.sh hart-domain-hook.sh` passes; `shellcheck` is not installed here.
+- No additional code change is needed to resolve the current (empty) open issue list.
+- QA runs the verification gate:
+  - `bash -n hart-domain-sync.sh hart-domain-hook.sh`
+  - `shellcheck hart-domain-sync.sh hart-domain-hook.sh` (if installed)
+  - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, `--remove`, and remove with an empty domain
+  - regression tests for the robustness fixes now in `origin/master`: multiple trailing slashes on `HART_URL`/`SERVICE_URL`, JSON bodies with spaces/special characters, `zone_for()` with glob-like zone names, and uppercase wildcard inputs
+  - confirm generated Traefik `Host()`/`HostRegexp()` rules and Cloudflare DNS targets are lowercase
+- If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the objective is resolved and no further action is needed.
