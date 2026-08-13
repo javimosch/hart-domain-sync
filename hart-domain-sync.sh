@@ -117,9 +117,11 @@ CF_KEY="$(cf_val CF_API_KEY)"
 
 cf() { # cf <METHOD> <path> [json-body]
   local m="$1" p="$2" d="${3:-}"
-  curl -s --max-time 15 -X "$m" "https://api.cloudflare.com/client/v4$p" \
+  local -a args=(-s --max-time 15 -X "$m" "https://api.cloudflare.com/client/v4$p" \
     -H "X-Auth-Email: $CF_EMAIL" -H "X-Auth-Key: $CF_KEY" \
-    -H "Content-Type: application/json" ${d:+--data "$d"}
+    -H "Content-Type: application/json")
+  [ -n "$d" ] && args+=(--data "$d")
+  curl "${args[@]}"
 }
 
 slug() { printf '%s' "$1" | LC_ALL=C tr '[:upper:]' '[:lower:]' | tr '.' '-' | LC_ALL=C tr -cd 'a-z0-9-'; }
