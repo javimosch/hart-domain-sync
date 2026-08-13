@@ -39,6 +39,10 @@ SINGLE_FILE="${SINGLE_FILE:-/etc/traefik/dynamic.yml}"   # target in file mode
 BOX_IP="${BOX_IP:-}"                            # REQUIRED for DNS: this box's public IPv4 (A target)
 BOX_IP6="${BOX_IP6:-}"                          # this box's public IPv6 (AAAA target) — set if your zone has a proxied wildcard
 SERVICE_URL="${SERVICE_URL:-http://127.0.0.1:8799}"   # how Traefik reaches hart
+# Remove any trailing slash so the hart API call doesn't become e.g. //v1/domain
+# and the Traefik upstream URL doesn't carry an extra slash.
+HART_URL="${HART_URL%/}"
+SERVICE_URL="${SERVICE_URL%/}"
 ENTRYPOINT="${ENTRYPOINT:-websecure}"           # Traefik TLS entrypoint name
 CERT_RESOLVER="${CERT_RESOLVER:-letsencrypt}"   # Traefik cert resolver name
 CF_ENV="${CF_ENV:-/etc/traefik/cloudflare.env}" # file holding CF_API_EMAIL + CF_API_KEY
@@ -172,7 +176,11 @@ PYREM
   else
     f="$DEST/$s"
     if [ -e "$f" ]; then
-      rm -f "$f" && log "removed: $s (fast remove for $domain)" || log "WARN: failed to remove $s"
+      if rm -f "$f"; then
+        log "removed: $s (fast remove for $domain)"
+      else
+        log "WARN: failed to remove $s"
+      fi
     else
       log "remove: $s not present (fast remove for $domain)"
     fi
@@ -181,7 +189,11 @@ PYREM
   # In file mode, an inert per-domain file may still be sitting in the watched directory
   # from a previous directory-mode run; clean it up so the remove is complete.
   if [ "$TRAEFIK_MODE" = "file" ] && [ -n "$REAL_DEST" ] && [ -e "$REAL_DEST/$s" ]; then
-    rm -f "$REAL_DEST/$s" && log "removed: stale $s from $REAL_DEST (fast remove for $domain)" || log "WARN: failed to remove stale $s from $REAL_DEST"
+    if rm -f "$REAL_DEST/$s"; then
+      log "removed: stale $s from $REAL_DEST (fast remove for $domain)"
+    else
+      log "WARN: failed to remove stale $s from $REAL_DEST"
+    fi
   fi
 
   log "fast remove complete: $domain"
@@ -298,7 +310,7 @@ fi
 zone_for() { # echo the most specific whitelist zone that is a suffix of $1, else nothing
   local d="$1" z best=""
   for z in "${ZONES[@]}"; do
-    if [ "$d" = "$z" ] || [ "${d%.$z}" != "$d" ]; then
+    if [ "$d" = "$z" ] || [ "${d%."$z"}" != "$d" ]; then
       [ ${#z} -gt ${#best} ] && best="$z"
     fi
   done
@@ -312,11 +324,17 @@ cf_upsert() { # cf_upsert <fqdn> <zone> <type> <content>
   body="{\"type\":\"$t\",\"name\":\"$d\",\"content\":\"$c\",\"ttl\":120,\"proxied\":false}"
   rid="$(cf GET "/zones/$zid/dns_records?type=$t&name=$d" | jq -r '.result[0].id // empty')"
   if [ -n "$rid" ]; then
-    cf PUT "/zones/$zid/dns_records/$rid" "$body" | jq -e '.success==true' >/dev/null 2>&1 \
-      && log "DNS: $t $d -> $c (updated)" || log "DNS: $t update failed for $d"
+    if cf PUT "/zones/$zid/dns_records/$rid" "$body" | jq -e '.success==true' >/dev/null 2>&1; then
+      log "DNS: $t $d -> $c (updated)"
+    else
+      log "DNS: $t update failed for $d"
+    fi
   else
-    cf POST "/zones/$zid/dns_records" "$body" | jq -e '.success==true' >/dev/null 2>&1 \
-      && log "DNS: $t $d -> $c (created)" || log "DNS: $t create failed for $d"
+    if cf POST "/zones/$zid/dns_records" "$body" | jq -e '.success==true' >/dev/null 2>&1; then
+      log "DNS: $t $d -> $c (created)"
+    else
+      log "DNS: $t create failed for $d"
+    fi
   fi
 }
 
