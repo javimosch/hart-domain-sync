@@ -329,7 +329,9 @@ cf_upsert() { # cf_upsert <fqdn> <zone> <type> <content>
   local d="$1" z="$2" t="$3" c="$4" zid rid body
   zid="$(cf GET "/zones?name=$z" | jq -r '.result[0].id // empty')"
   [ -n "$zid" ] || { log "DNS: no zone id for $z"; return; }
-  body="{\"type\":\"$t\",\"name\":\"$d\",\"content\":\"$c\",\"ttl\":120,\"proxied\":false}"
+  body="$(jq -n --arg type "$t" --arg name "$d" --arg content "$c" \
+    --argjson ttl 120 --argjson proxied false \
+    '{type: $type, name: $name, content: $content, ttl: $ttl, proxied: $proxied}')"
   rid="$(cf GET "/zones/$zid/dns_records?type=$t&name=$d" | jq -r '.result[0].id // empty')"
   if [ -n "$rid" ]; then
     if cf PUT "/zones/$zid/dns_records/$rid" "$body" | jq -e '.success==true' >/dev/null 2>&1; then
