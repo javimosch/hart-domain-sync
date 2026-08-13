@@ -113,3 +113,4 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
   - manual dry-runs in both directory and file modes covering mixed-case hart entries, uppercase `WILDCARD_DOMAIN` / `WILDCARD_INSTANCE_DOMAIN`, and `--remove`
   - confirm generated Traefik `Host()` / `HostRegexp()` rules and Cloudflare DNS targets are lowercase
 - If the gate passes, close PR #20 as superseded and mark the objective resolved. If QA finds a regression or a new bug, open a focused GitHub issue and produce one small conventional-commit PR.
+- No additional code change is expected unless QA uncovers a regression; the branch is ready for verification.
