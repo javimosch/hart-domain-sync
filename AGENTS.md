@@ -79,3 +79,18 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
   - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, and `--remove`
   - regression tests for the new fix: mixed-case hart domain entries, uppercase `WILDCARD_DOMAIN`/`WILDCARD_INSTANCE_DOMAIN` values, and confirm the generated Traefik rule and DNS target are lowercase.
 - If QA finds a bug, dev fixes it in a focused commit; if the gate passes, close PR #14 as superseded and the original objective is resolved.
+
+## 2026-08-13 architect plan (am-add074-dknmeo43j24t-079eea16)
+
+- `gh issue list --state open` returns issues #16 and #17, both describing the same bug: mixed-case hart domain entries are rejected by the `^[a-z0-9.-]+$` regex and uppercase `WILDCARD_DOMAIN` / `WILDCARD_INSTANCE_DOMAIN` env values fail the strict-subdomain `case` match.
+- The current `origin/master` (commit `4f10e16`) already contains the lower-case normalization fix:
+  - `WILDCARD_DOMAIN` and `WILDCARD_INSTANCE_DOMAIN` are forced to lowercase after the config file is sourced.
+  - hart-fetched domains are lowercased with `tr 'A-Z' 'a-z'` before the `grep` validation and before wildcard matching.
+- The current branch `am/am-add074-dknmeo43j24t-079eea16` is at the same commit as `origin/master`, so no additional code change is required to resolve the reported bug.
+- The next step is to close #16 and #17 as resolved by the existing `origin/master` code, and to close stale PR #14 (the earlier bundling version of the same fix) and PR #18 (shellcheck source directive, already present on `origin/master`) as superseded.
+- QA should still run the verification gate:
+  - `bash -n hart-domain-sync.sh hart-domain-hook.sh`
+  - `shellcheck hart-domain-sync.sh hart-domain-hook.sh` (if installed)
+  - manual dry-runs in both directory and file modes that specifically exercise mixed-case hart entries and uppercase `WILDCARD_DOMAIN` / `WILDCARD_INSTANCE_DOMAIN` values
+  - confirm the generated Traefik `Host()` / `HostRegexp()` rules and Cloudflare DNS targets are lowercase
+- If QA finds a regression or an uncovered edge case, open a focused issue and produce a small conventional-commit PR; otherwise mark the objective resolved and close the stale PRs.

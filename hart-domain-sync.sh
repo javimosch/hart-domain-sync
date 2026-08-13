@@ -51,8 +51,8 @@ AUTH_TOKEN="${HART_ADMIN_TOKEN:-${HART_TOKEN:-}}"  # send Authorization if the h
 
 # DNS/HTTP hostnames are case-insensitive; normalise wildcard inputs so
 # mixed-case hart domains still match the configured wildcard.
-WILDCARD_DOMAIN="$(printf '%s' "$WILDCARD_DOMAIN" | tr 'A-Z' 'a-z')"
-WILDCARD_INSTANCE_DOMAIN="$(printf '%s' "$WILDCARD_INSTANCE_DOMAIN" | tr 'A-Z' 'a-z')"
+WILDCARD_DOMAIN="$(printf '%s' "$WILDCARD_DOMAIN" | LC_ALL=C tr '[:upper:]' '[:lower:]')"
+WILDCARD_INSTANCE_DOMAIN="$(printf '%s' "$WILDCARD_INSTANCE_DOMAIN" | LC_ALL=C tr '[:upper:]' '[:lower:]')"
 
 if [ "$MANAGE_DNS" = "1" ] && [ -z "$BOX_IP" ]; then
   log_early() { echo "$(date -u +%H:%M:%S) [hart-domain-sync] $*" >&2; }
@@ -68,6 +68,9 @@ REMOVE_DOMAIN=""
 if [ "${1:-}" = "--remove" ]; then
   REMOVE_DOMAIN="${2:-}"
   [ -n "$REMOVE_DOMAIN" ] || { log "usage: $0 [--remove <domain>]"; exit 1; }
+  # DNS/HTTP hostnames are case-insensitive; keep the remove path consistent
+  # with the lower-cased per-domain files generated in the reconcile loop.
+  REMOVE_DOMAIN="$(printf '%s' "$REMOVE_DOMAIN" | LC_ALL=C tr '[:upper:]' '[:lower:]')"
 fi
 
 # CF creds: extract (don't source — env files can carry chars bash chokes on).
@@ -115,7 +118,7 @@ cf() { # cf <METHOD> <path> [json-body]
     -H "Content-Type: application/json" ${d:+--data "$d"}
 }
 
-slug() { printf '%s' "$1" | tr 'A-Z' 'a-z' | tr '.' '-' | tr -cd 'a-z0-9-'; }
+slug() { printf '%s' "$1" | LC_ALL=C tr '[:upper:]' '[:lower:]' | tr '.' '-' | LC_ALL=C tr -cd 'a-z0-9-'; }
 regex_escape() { printf '%s' "$1" | sed 's/\./\\\\./g'; }
 
 fast_remove() { # fast_remove <domain>: delete the per-domain router without fetching hart
@@ -199,9 +202,9 @@ under_wildcard_instance() { # true if $1 is a strict subdomain of $WILDCARD_INST
 # resolve the provider layout before touching anything
 if [ "$TRAEFIK_MODE" = "auto" ]; then
   if [ -r "$TRAEFIK_MAIN" ] && awk '/^providers:/{p=1} p&&/^[[:space:]]+file:/{f=1} f&&/directory:/{print "d";exit} f&&/filename:/{print "f";exit}' "$TRAEFIK_MAIN" | grep -q d; then
-    TRAEFIK_MODE=directory
+    TRAEFIK_MODE="directory"
   else
-    TRAEFIK_MODE=file
+    TRAEFIK_MODE="file"
   fi
   log "traefik mode: $TRAEFIK_MODE (detected from $TRAEFIK_MAIN)"
 fi
@@ -219,7 +222,7 @@ RESP="$(curl -s --max-time 10 "${CURL_AUTH[@]}" "$HART_URL/v1/domain")" \
   || { log "cannot reach hart at $HART_URL — abort (no prune)"; exit 1; }
 echo "$RESP" | jq -e '.ok==true' >/dev/null 2>&1 \
   || { log "unexpected hart response — abort (no prune): $(printf '%.120s' "$RESP")"; exit 1; }
-mapfile -t DOMAINS < <(echo "$RESP" | jq -r '.domains[]?.domain' | tr 'A-Z' 'a-z' | grep -E '^[a-z0-9.-]+$' || true)
+mapfile -t DOMAINS < <(echo "$RESP" | jq -r '.domains[]?.domain' | LC_ALL=C tr '[:upper:]' '[:lower:]' | LC_ALL=C grep -E '^[a-z0-9.-]+$' || true)
 
 # In file mode the per-domain files are only an intermediate representation: generate
 # them into a scratch dir with the existing logic, then merge into $SINGLE_FILE. That
@@ -285,7 +288,7 @@ ZONES=()
 if [ "$MANAGE_DNS" = "1" ] && [ -n "$CF_EMAIL" ] && [ -n "$CF_KEY" ]; then
   ZRESP="$(cf GET '/zones?per_page=50&status=active')"
   if echo "$ZRESP" | jq -e '.success==true' >/dev/null 2>&1; then
-    mapfile -t ZONES < <(echo "$ZRESP" | jq -r '.result[].name')
+    mapfile -t ZONES < <(echo "$ZRESP" | jq -r '.result[].name' | LC_ALL=C tr '[:upper:]' '[:lower:]')
     log "CF zones (whitelist): ${#ZONES[@]}"
   else
     log "CF zones fetch failed — DNS automation skipped this run"
