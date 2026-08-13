@@ -94,3 +94,22 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
   - manual dry-runs in both directory and file modes that specifically exercise mixed-case hart entries and uppercase `WILDCARD_DOMAIN` / `WILDCARD_INSTANCE_DOMAIN` values
   - confirm the generated Traefik `Host()` / `HostRegexp()` rules and Cloudflare DNS targets are lowercase
 - If QA finds a regression or an uncovered edge case, open a focused issue and produce a small conventional-commit PR; otherwise mark the objective resolved and close the stale PRs.
+
+## 2026-08-13 architect plan (am-add074-dknotw3vct3i-246c2c03)
+
+- `gh issue list --state open` returns `[]`; issues #1, #16, and #17 are CLOSED. No open GitHub issues remain to fix.
+- `gh pr list --state open` returns only PR #20 (`am/am-add074-dknnxq87ed8m-db2ba47f`). That PR bundles a docs plan with shellcheck/style fixes for `hart-domain-sync.sh` and should be superseded by the clean, self-contained PR being built on this branch.
+- This branch is now ahead of `origin/master` by four small fix commits:
+  - `fix(sync): strip trailing slash from HART_URL and SERVICE_URL`
+  - `fix(cf): build curl args in an array to safely quote JSON body`
+  - `fix(sync): replace `&& log || log` anti-pattern with if/else`
+  - `fix(sync): avoid unquoted expansion in zone_for suffix pattern`
+- Verification gate status after the dev commits:
+  - `bash -n hart-domain-sync.sh hart-domain-hook.sh` passes.
+  - `shellcheck hart-domain-sync.sh hart-domain-hook.sh` reports no issues.
+- Next step: QA runs the full verification gate:
+  - `bash -n hart-domain-sync.sh hart-domain-hook.sh`
+  - `shellcheck hart-domain-sync.sh hart-domain-hook.sh`
+  - manual dry-runs in both directory and file modes covering mixed-case hart entries, uppercase `WILDCARD_DOMAIN` / `WILDCARD_INSTANCE_DOMAIN`, and `--remove`
+  - confirm generated Traefik `Host()` / `HostRegexp()` rules and Cloudflare DNS targets are lowercase
+- If the gate passes, close PR #20 as superseded and mark the objective resolved. If QA finds a regression or a new bug, open a focused GitHub issue and produce one small conventional-commit PR.
