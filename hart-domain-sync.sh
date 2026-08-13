@@ -68,6 +68,9 @@ REMOVE_DOMAIN=""
 if [ "${1:-}" = "--remove" ]; then
   REMOVE_DOMAIN="${2:-}"
   [ -n "$REMOVE_DOMAIN" ] || { log "usage: $0 [--remove <domain>]"; exit 1; }
+  # DNS/HTTP hostnames are case-insensitive; keep the remove path consistent
+  # with the lower-cased per-domain files generated in the reconcile loop.
+  REMOVE_DOMAIN="$(printf '%s' "$REMOVE_DOMAIN" | tr 'A-Z' 'a-z')"
 fi
 
 # CF creds: extract (don't source — env files can carry chars bash chokes on).
