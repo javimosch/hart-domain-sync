@@ -128,3 +128,19 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
   - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, and `--remove`
   - regression tests for the two new fixes: a JSON body containing spaces/special characters, and `zone_for()` with zone names that contain glob-like characters
 - If the gate passes, close PR #21 as superseded and the original objective is resolved. If QA finds a regression, open a focused GitHub issue and produce one small conventional-commit PR.
+
+## 2026-08-13 architect plan (am-add074-dkntjvjpixt5-e9b01c3a)
+
+- `gh issue list --state open` returns `[]`; issues #1, #16, and #17 are all CLOSED. No open GitHub issues remain to fix.
+- `gh pr list --state open` returns only PR #21 (`am/am-add074-dknotw3vct3i-246c2c03`), which is merge-conflicting and stale. Its four `hart-domain-sync.sh` shell robustness fixes are already present on `origin/master`:
+  - Trailing-slash stripping for `HART_URL` and `SERVICE_URL` was merged via `72de66a` (`docs(agents): add current run architect plan and issue/PR status (#20)`).
+  - `if/else` logging refactor for fast-remove was also merged in `72de66a`.
+  - `cf()` curl args array, `zone_for()` literal-suffix `case` pattern, and wildcard suffix quoting were merged via `ebd20ce` (`fix(cf): build curl args in an array to safely quote JSON body (#23)`).
+- Diffing `am/am-add074-dknotw3vct3i-246c2c03` against `origin/master` (`ebd20ce`) shows only cosmetic differences in `hart-domain-sync.sh` (comment wording and `case` pattern quoting for wildcard suffixes) plus stale AGENTS.md documentation; the functional changes are already on `origin/master`.
+- `bash -n hart-domain-sync.sh hart-domain-hook.sh` passes on the current branch; `shellcheck` is not installed in this environment.
+- No additional code change is required to resolve the reported issues. The next step is for QA to run the verification gate:
+  - `bash -n hart-domain-sync.sh hart-domain-hook.sh`
+  - `shellcheck hart-domain-sync.sh hart-domain-hook.sh` (if installed)
+  - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, `--remove`, and inputs with trailing slashes
+  - regression tests for `zone_for()` with zone names containing glob-like characters and for `cf()` with JSON bodies containing spaces/special characters
+- If the verification gate passes, close PR #21 as superseded and mark the original objective resolved. If QA finds an uncovered bug or regression, open a focused GitHub issue and produce one small conventional-commit PR.
