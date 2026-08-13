@@ -26,7 +26,7 @@ CONF="${DOMAIN_SYNC_ENV:-/etc/hart/domain-sync.env}"
 
 # Trim leading/trailing whitespace and CRs from user-supplied values so
 # accidental padding in the env file does not break URL/hostname matching.
-trim() { printf '%s' "$1" | tr -d '\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//'; }
+trim() { printf '%s' "$1" | LC_ALL=C tr -d '\r' | LC_ALL=C sed 's/^[[:space:]]*//;s/[[:space:]]*$//'; }
 
 HART_URL="$(trim "${HART_URL:-http://127.0.0.1:8799}")"   # hart daemon (default local)
 DEST="${DEST:-/etc/traefik/dynamic.d}"          # Traefik watched directory (directory mode)
@@ -79,6 +79,9 @@ log() { echo "$(date -u +%H:%M:%S) [hart-domain-sync] $*" >&2; }
 REMOVE_DOMAIN=""
 if [ "${1:-}" = "--remove" ]; then
   REMOVE_DOMAIN="${2:-}"
+  # Trim first so a CRLF-padded or whitespace-padded hook argument does not
+  # become an empty or unmatchable remove target.
+  REMOVE_DOMAIN="$(trim "$REMOVE_DOMAIN")"
   [ -n "$REMOVE_DOMAIN" ] || { log "usage: $0 [--remove <domain>]"; exit 1; }
   # DNS/HTTP hostnames are case-insensitive; keep the remove path consistent
   # with the lower-cased per-domain files generated in the reconcile loop.
