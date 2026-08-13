@@ -112,3 +112,19 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
   - exercise `--remove` on mixed-case domains and confirm the per-domain file / merged router and DNS records are handled correctly
   - confirm generated Traefik `Host()` / `HostRegexp()` rules and Cloudflare DNS targets are lowercase
 - If QA finds an uncovered bug or regression, open a focused issue and produce one small conventional-commit PR; otherwise the objective is resolved and no further action is needed.
+
+## 2026-08-13 architect plan (am-add074-dknpq1rqnoix-08b03afe)
+
+- `gh issue list --state open` returns `[]`; issues #1, #16, and #17 are CLOSED. No open GitHub issues remain to fix.
+- `gh pr list --state open` returns only PR #21 (`am/am-add074-dknotw3vct3i-246c2c03`), which is merge-conflicting and stale. Its `hart-domain-sync.sh` changes partially overlap with `origin/master` (commit `72de66a`), which already contains the trailing-slash and `if/else` logging refactors.
+- Two real, unmerged robustness fixes remain in PR #21 and should land on this branch as clean, separate conventional commits:
+  1. `fix(cf): build curl args in an array to safely quote JSON body` — replace `${d:+--data "$d"}` with an `args` array so JSON payloads with spaces/special characters are passed as a single argument to `curl`.
+  2. `fix(sync): avoid unquoted expansion in zone_for suffix pattern` — replace the `${d%…}` suffix test with a `case` pattern that treats the zone name as a literal suffix and prevents glob mis-matches.
+- The current branch `am/am-add074-dknpq1rqnoix-08b03afe` is at `origin/master` (`72de66a`) with a clean worktree.
+- Dev applies the two fixes to `hart-domain-sync.sh` only; do not bundle the stale AGENTS.md plan from PR #21.
+- QA runs the verification gate:
+  - `bash -n hart-domain-sync.sh hart-domain-hook.sh`
+  - `shellcheck hart-domain-sync.sh hart-domain-hook.sh`
+  - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, and `--remove`
+  - regression tests for the two new fixes: a JSON body containing spaces/special characters, and `zone_for()` with zone names that contain glob-like characters
+- If the gate passes, close PR #21 as superseded and the original objective is resolved. If QA finds a regression, open a focused GitHub issue and produce one small conventional-commit PR.
