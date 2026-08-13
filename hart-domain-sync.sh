@@ -39,10 +39,10 @@ SINGLE_FILE="${SINGLE_FILE:-/etc/traefik/dynamic.yml}"   # target in file mode
 BOX_IP="${BOX_IP:-}"                            # REQUIRED for DNS: this box's public IPv4 (A target)
 BOX_IP6="${BOX_IP6:-}"                          # this box's public IPv6 (AAAA target) — set if your zone has a proxied wildcard
 SERVICE_URL="${SERVICE_URL:-http://127.0.0.1:8799}"   # how Traefik reaches hart
-# Remove any trailing slash so the hart API call doesn't become e.g. //v1/domain
-# and the Traefik upstream URL doesn't carry an extra slash.
-HART_URL="${HART_URL%/}"
-SERVICE_URL="${SERVICE_URL%/}"
+# Remove any trailing slashes so the hart API call doesn't end up with a doubled
+# (or tripled) path separator, and the Traefik upstream URL is always a clean URL.
+while [[ "$HART_URL" == */ ]]; do HART_URL="${HART_URL%/}"; done
+while [[ "$SERVICE_URL" == */ ]]; do SERVICE_URL="${SERVICE_URL%/}"; done
 ENTRYPOINT="${ENTRYPOINT:-websecure}"           # Traefik TLS entrypoint name
 CERT_RESOLVER="${CERT_RESOLVER:-letsencrypt}"   # Traefik cert resolver name
 CF_ENV="${CF_ENV:-/etc/traefik/cloudflare.env}" # file holding CF_API_EMAIL + CF_API_KEY
@@ -329,7 +329,9 @@ cf_upsert() { # cf_upsert <fqdn> <zone> <type> <content>
   local d="$1" z="$2" t="$3" c="$4" zid rid body
   zid="$(cf GET "/zones?name=$z" | jq -r '.result[0].id // empty')"
   [ -n "$zid" ] || { log "DNS: no zone id for $z"; return; }
-  body="{\"type\":\"$t\",\"name\":\"$d\",\"content\":\"$c\",\"ttl\":120,\"proxied\":false}"
+  body="$(jq -n --arg type "$t" --arg name "$d" --arg content "$c" \
+    --argjson ttl 120 --argjson proxied false \
+    '{type: $type, name: $name, content: $content, ttl: $ttl, proxied: $proxied}')"
   rid="$(cf GET "/zones/$zid/dns_records?type=$t&name=$d" | jq -r '.result[0].id // empty')"
   if [ -n "$rid" ]; then
     if cf PUT "/zones/$zid/dns_records/$rid" "$body" | jq -e '.success==true' >/dev/null 2>&1; then
