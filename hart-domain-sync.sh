@@ -203,13 +203,13 @@ PYREM
 
 under_wildcard() { # true if $1 is a strict subdomain of $WILDCARD_DOMAIN
   [ -n "$WILDCARD_DOMAIN" ] || return 1
-  case "$1" in *".$WILDCARD_DOMAIN") return 0 ;; esac
+  case "$1" in *".${WILDCARD_DOMAIN}") return 0 ;; esac
   return 1
 }
 
 under_wildcard_instance() { # true if $1 is a strict subdomain of $WILDCARD_INSTANCE_DOMAIN (external wildcard)
   [ -n "$WILDCARD_INSTANCE_DOMAIN" ] || return 1
-  case "$1" in *".$WILDCARD_INSTANCE_DOMAIN") return 0 ;; esac
+  case "$1" in *".${WILDCARD_INSTANCE_DOMAIN}") return 0 ;; esac
   return 1
 }
 
