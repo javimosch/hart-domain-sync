@@ -51,6 +51,7 @@ ENTRYPOINT="${ENTRYPOINT:-websecure}"           # Traefik TLS entrypoint name
 CERT_RESOLVER="${CERT_RESOLVER:-letsencrypt}"   # Traefik cert resolver name
 CF_ENV="${CF_ENV:-/etc/traefik/cloudflare.env}" # file holding CF_API_EMAIL + CF_API_KEY
 MANAGE_DNS="${MANAGE_DNS:-1}"                   # 0 = don't touch Cloudflare DNS at all
+MANAGE_DNS="$(trim "$MANAGE_DNS")"
 WILDCARD_DOMAIN="${WILDCARD_DOMAIN:-}"          # e.g. hart.intrane.fr — write one Host(\`*.hart.intrane.fr\`) router for all subdomains
 WILDCARD_INSTANCE_DOMAIN="${WILDCARD_INSTANCE_DOMAIN:-}"  # e.g. hart.intrane.fr — subdomains are covered by an external wildcard router/DNS; skip per-domain files
 PREFIX="hart-"
