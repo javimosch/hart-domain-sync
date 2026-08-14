@@ -191,3 +191,24 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
   - regression tests for the robustness fixes already in `origin/master`: URLs with multiple trailing slashes and embedded CRs, `WILDCARD_DOMAIN`/`WILDCARD_INSTANCE_DOMAIN` with leading/trailing whitespace and uppercase letters, `CF_ENV` with CRLF line endings and quoted values, `TRAEFIK_MAIN` with commented `directory:`/`filename:` lines and leading whitespace, and `--remove` with whitespace or mixed case
   - confirm generated Traefik `Host()` / `HostRegexp()` rules and Cloudflare DNS targets are lowercase
 - If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR; otherwise close PR #28 as superseded and the objective is resolved.
+
+## 2026-08-14 architect plan (am-add074-dkomqd9rqk9t-3a074160)
+
+- `gh issue list --state open` returns `[]`; issues #1, #16, and #17 are CLOSED. No open GitHub issues remain to fix.
+- `gh pr list --state open` returns PR #31 and PR #28:
+  - PR #28 (`am/am-add074-dknxszx93wzf-9932186f`) only rearranges robustness fixes already in `origin/master` (commits `b46d089` and `4fb7788` via PR #29 and #30). It should be closed as superseded.
+  - PR #31 (`am/am-add074-dkojhzmy9op8-48d811c5`) bundles a docs plan and three code commits. The middle commit `fix(sync): trim IP, DNS, and auth values after loading env` is already in `origin/master` (4fb7788). The two remaining real, unmerged robustness fixes are:
+    1. `fix(sync): trim path and file config variables after loading` — trim `CONF`, `DEST`, `TRAEFIK_MAIN`, `SINGLE_FILE`, and `CF_ENV` after defaults are applied.
+    2. `fix(hook): trim env paths and remove argument before dispatch` — define `trim()` in the hook, trim `HART_DOMAIN_SYNC`, `HART_DOMAIN_SYNC_LOG`, and the remove domain, and move `exec` redirection after the log path is finalized.
+- Dev should land those two fixes as clean, separate conventional commits on this branch; do not bundle the stale `AGENTS.md` plan from PR #31; do not re-apply the already-merged IP/DNS/auth trim.
+- `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` already pass on the current branch.
+- QA runs the verification gate after the dev commits:
+  - `bash -n hart-domain-sync.sh hart-domain-hook.sh`
+  - `shellcheck hart-domain-sync.sh hart-domain-hook.sh`
+  - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, and `--remove`
+  - regression tests for the new fixes:
+    - config env file with CRLF/whitespace in `CONF`, `DEST`, `TRAEFIK_MAIN`, `SINGLE_FILE`, and `CF_ENV` (e.g., a path suffixed with `\r`)
+    - `HART_DOMAIN_SYNC` and `HART_DOMAIN_SYNC_LOG` with CRLF/whitespace
+    - `remove` hook event with a whitespace-padded or CRLF-padded domain
+  - confirm generated Traefik `Host()` / `HostRegexp()` rules and Cloudflare DNS targets are lowercase
+- If the gate passes, close PR #31 as superseded by the clean conventional commits and close PR #28 as superseded; the original objective is resolved. If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR.
