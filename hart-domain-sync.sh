@@ -23,11 +23,13 @@ trim() { printf '%s' "$1" | LC_ALL=C tr -d '\r' | LC_ALL=C sed 's/^[[:space:]]*/
 # Config file (also loaded by the systemd unit's EnvironmentFile) — sourced here too so the
 # HART_DOMAIN_HOOK path gets the same settings as the timer. Simple KEY=value, operator-owned.
 CONF="${DOMAIN_SYNC_ENV:-/etc/hart/domain-sync.env}"
+CONF="$(trim "$CONF")"
 # shellcheck source=/dev/null
 [ -f "$CONF" ] && . "$CONF"
 
 HART_URL="${HART_URL:-http://127.0.0.1:8799}"   # hart daemon (default local)
 DEST="${DEST:-/etc/traefik/dynamic.d}"          # Traefik watched directory (directory mode)
+DEST="$(trim "$DEST")"
 # TRAEFIK_MODE: how this box's Traefik reads dynamic config.
 #   directory -> providers.file.directory : we drop one router file per domain in $DEST
 #   file      -> providers.file.filename  : we MERGE our routers into that single file
@@ -37,7 +39,9 @@ DEST="${DEST:-/etc/traefik/dynamic.d}"          # Traefik watched directory (dir
 # it just serves Traefik's self-signed default, with nothing in the logs.
 TRAEFIK_MODE="${TRAEFIK_MODE:-auto}"
 TRAEFIK_MAIN="${TRAEFIK_MAIN:-/etc/traefik/traefik.yml}"
+TRAEFIK_MAIN="$(trim "$TRAEFIK_MAIN")"
 SINGLE_FILE="${SINGLE_FILE:-/etc/traefik/dynamic.yml}"   # target in file mode
+SINGLE_FILE="$(trim "$SINGLE_FILE")"
 BOX_IP="${BOX_IP:-}"                            # REQUIRED for DNS: this box's public IPv4 (A target)
 BOX_IP6="${BOX_IP6:-}"                          # this box's public IPv6 (AAAA target) — set if your zone has a proxied wildcard
 BOX_IP="$(trim "$BOX_IP")"
