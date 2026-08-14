@@ -18,7 +18,7 @@
 # config file below — the built-in defaults are generic conventions, NOT host addresses.
 set -uo pipefail
 
-trim() { printf '%s' "$1" | LC_ALL=C sed 's/^[[:space:]]*//;s/[[:space:]]*$//'; }
+trim() { printf '%s' "$1" | LC_ALL=C tr -d '\r' | LC_ALL=C sed 's/^[[:space:]]*//;s/[[:space:]]*$//'; }
 
 # Config file (also loaded by the systemd unit's EnvironmentFile) — sourced here too so the
 # HART_DOMAIN_HOOK path gets the same settings as the timer. Simple KEY=value, operator-owned.
@@ -115,6 +115,8 @@ cf_val() {
   value="${value%"${value##*[![:space:]]}"}"
   value="${value#\"}"; value="${value%\"}"
   value="${value#\'}"; value="${value%\'}"
+  # CRLF-padded env files can leave carriage returns inside quoted values; strip them.
+  value="${value//$'\r'/}"
   printf '%s\n' "$value"
 }
 CF_EMAIL="$(cf_val CF_API_EMAIL)"
@@ -220,7 +222,7 @@ under_wildcard_instance() { # true if $1 is a strict subdomain of $WILDCARD_INST
 
 # resolve the provider layout before touching anything
 if [ "$TRAEFIK_MODE" = "auto" ]; then
-  if [ -r "$TRAEFIK_MAIN" ] && awk '/^[[:space:]]*#/{next} /^providers:/{p=1} p&&/^[[:space:]]+file:/{f=1} f&&/directory:/{print "d";exit} f&&/filename:/{print "f";exit}' "$TRAEFIK_MAIN" | grep -q d; then
+  if [ -r "$TRAEFIK_MAIN" ] && awk '/^[[:space:]]*#/{next} /^providers:/{p=1} p&&/^[[:space:]]+file:/{f=1} f&&/^[[:space:]]*directory:/{print "d";exit} f&&/^[[:space:]]*filename:/{print "f";exit}' "$TRAEFIK_MAIN" | grep -q d; then
     TRAEFIK_MODE="directory"
   else
     TRAEFIK_MODE="file"
