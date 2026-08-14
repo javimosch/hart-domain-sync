@@ -38,6 +38,8 @@ DEST="$(trim "$DEST")"
 # router written here is silently ignored and the domain never gets a certificate --
 # it just serves Traefik's self-signed default, with nothing in the logs.
 TRAEFIK_MODE="${TRAEFIK_MODE:-auto}"
+TRAEFIK_MODE="$(trim "$TRAEFIK_MODE")"
+[ -n "$TRAEFIK_MODE" ] || TRAEFIK_MODE=auto
 TRAEFIK_MAIN="${TRAEFIK_MAIN:-/etc/traefik/traefik.yml}"
 TRAEFIK_MAIN="$(trim "$TRAEFIK_MAIN")"
 SINGLE_FILE="${SINGLE_FILE:-/etc/traefik/dynamic.yml}"   # target in file mode
