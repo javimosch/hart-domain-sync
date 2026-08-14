@@ -56,7 +56,11 @@ SERVICE_URL="$(trim "$SERVICE_URL")"
 while [[ "$HART_URL" == */ ]]; do HART_URL="${HART_URL%/}"; done
 while [[ "$SERVICE_URL" == */ ]]; do SERVICE_URL="${SERVICE_URL%/}"; done
 ENTRYPOINT="${ENTRYPOINT:-websecure}"           # Traefik TLS entrypoint name
+ENTRYPOINT="$(trim "$ENTRYPOINT")"
+[ -n "$ENTRYPOINT" ] || ENTRYPOINT=websecure
 CERT_RESOLVER="${CERT_RESOLVER:-letsencrypt}"   # Traefik cert resolver name
+CERT_RESOLVER="$(trim "$CERT_RESOLVER")"
+[ -n "$CERT_RESOLVER" ] || CERT_RESOLVER=letsencrypt
 CF_ENV="${CF_ENV:-/etc/traefik/cloudflare.env}" # file holding CF_API_EMAIL + CF_API_KEY
 CF_ENV="$(trim "$CF_ENV")"
 MANAGE_DNS="${MANAGE_DNS:-1}"                   # 0 = don't touch Cloudflare DNS at all
