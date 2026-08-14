@@ -24,8 +24,15 @@ trim() { printf '%s' "$1" | LC_ALL=C tr -d '\r' | LC_ALL=C sed 's/^[[:space:]]*/
 # HART_DOMAIN_HOOK path gets the same settings as the timer. Simple KEY=value, operator-owned.
 CONF="${DOMAIN_SYNC_ENV:-/etc/hart/domain-sync.env}"
 CONF="$(trim "$CONF")"
-# shellcheck source=/dev/null
-[ -f "$CONF" ] && . "$CONF"
+# Strip CRLF line endings before sourcing; otherwise bash may parse trailing \r as an
+# extra token and either fail the assignment or bake the carriage return into values.
+if [ -f "$CONF" ]; then
+  CONF_TMP=$(mktemp) || { echo "cannot create temp config" >&2; exit 1; }
+  LC_ALL=C sed 's/\r$//' "$CONF" > "$CONF_TMP"
+  # shellcheck source=/dev/null
+  . "$CONF_TMP"
+  rm -f "$CONF_TMP"
+fi
 
 HART_URL="${HART_URL:-http://127.0.0.1:8799}"   # hart daemon (default local)
 DEST="${DEST:-/etc/traefik/dynamic.d}"          # Traefik watched directory (directory mode)
@@ -38,6 +45,8 @@ DEST="$(trim "$DEST")"
 # router written here is silently ignored and the domain never gets a certificate --
 # it just serves Traefik's self-signed default, with nothing in the logs.
 TRAEFIK_MODE="${TRAEFIK_MODE:-auto}"
+TRAEFIK_MODE="$(trim "$TRAEFIK_MODE")"
+[ -n "$TRAEFIK_MODE" ] || TRAEFIK_MODE=auto
 TRAEFIK_MAIN="${TRAEFIK_MAIN:-/etc/traefik/traefik.yml}"
 TRAEFIK_MAIN="$(trim "$TRAEFIK_MAIN")"
 SINGLE_FILE="${SINGLE_FILE:-/etc/traefik/dynamic.yml}"   # target in file mode
@@ -54,11 +63,19 @@ SERVICE_URL="$(trim "$SERVICE_URL")"
 while [[ "$HART_URL" == */ ]]; do HART_URL="${HART_URL%/}"; done
 while [[ "$SERVICE_URL" == */ ]]; do SERVICE_URL="${SERVICE_URL%/}"; done
 ENTRYPOINT="${ENTRYPOINT:-websecure}"           # Traefik TLS entrypoint name
+ENTRYPOINT="$(trim "$ENTRYPOINT")"
+[ -n "$ENTRYPOINT" ] || ENTRYPOINT=websecure
 CERT_RESOLVER="${CERT_RESOLVER:-letsencrypt}"   # Traefik cert resolver name
+CERT_RESOLVER="$(trim "$CERT_RESOLVER")"
+[ -n "$CERT_RESOLVER" ] || CERT_RESOLVER=letsencrypt
 CF_ENV="${CF_ENV:-/etc/traefik/cloudflare.env}" # file holding CF_API_EMAIL + CF_API_KEY
 CF_ENV="$(trim "$CF_ENV")"
 MANAGE_DNS="${MANAGE_DNS:-1}"                   # 0 = don't touch Cloudflare DNS at all
 MANAGE_DNS="$(trim "$MANAGE_DNS")"
+# Seconds to wait for new DNS records to propagate before restarting Traefik for ACME.
+PROPAGATE_WAIT="${PROPAGATE_WAIT:-10}"
+PROPAGATE_WAIT="$(trim "$PROPAGATE_WAIT")"
+[ -n "$PROPAGATE_WAIT" ] || PROPAGATE_WAIT=10
 WILDCARD_DOMAIN="${WILDCARD_DOMAIN:-}"          # e.g. hart.intrane.fr — write one Host(\`*.hart.intrane.fr\`) router for all subdomains
 WILDCARD_INSTANCE_DOMAIN="${WILDCARD_INSTANCE_DOMAIN:-}"  # e.g. hart.intrane.fr — subdomains are covered by an external wildcard router/DNS; skip per-domain files
 PREFIX="hart-"
@@ -606,8 +623,8 @@ fi
 
 # --- 5. new domain(s) -> force one clean ACME attempt (DNS has been set + given time to propagate) ---
 if [ "$NEW" = 1 ]; then
-  log "new domain(s) added — waiting ${PROPAGATE_WAIT:-10}s for DNS, then restarting Traefik for ACME"
-  sleep "${PROPAGATE_WAIT:-10}"
+  log "new domain(s) added — waiting ${PROPAGATE_WAIT}s for DNS, then restarting Traefik for ACME"
+  sleep "$PROPAGATE_WAIT"
   if sudo -n systemctl restart traefik 2>/dev/null; then
     log "traefik restarted — cert(s) will issue on the retry"
   else
