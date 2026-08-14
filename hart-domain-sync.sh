@@ -59,6 +59,7 @@ WILDCARD_INSTANCE_DOMAIN="${WILDCARD_INSTANCE_DOMAIN:-}"  # e.g. hart.intrane.fr
 PREFIX="hart-"
 REAL_DEST="$DEST"                               # original destination, even if file mode stages elsewhere
 AUTH_TOKEN="${HART_ADMIN_TOKEN:-${HART_TOKEN:-}}"  # send Authorization if the hart instance requires a token
+AUTH_TOKEN="$(trim "$AUTH_TOKEN")"
 
 # DNS/HTTP hostnames are case-insensitive; normalise wildcard inputs so
 # mixed-case hart domains still match the configured wildcard.
