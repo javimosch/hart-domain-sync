@@ -178,3 +178,32 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
   - regression tests for the robustness fixes now in `origin/master`: multiple trailing slashes on `HART_URL`/`SERVICE_URL`, JSON bodies with spaces/special characters, `zone_for()` with glob-like zone names, and uppercase wildcard inputs
   - confirm generated Traefik `Host()`/`HostRegexp()` rules and Cloudflare DNS targets are lowercase
 - If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the objective is resolved and no further action is needed.
+
+## 2026-08-14 architect plan (am-add074-dkojhzmy9op8-48d811c5)
+
+- `gh issue list --state open` returns `[]`; issues #1, #16, and #17 are CLOSED. No open GitHub issues remain to fix.
+- `gh pr list --state open` returns PR #28 and PR #30:
+  - PR #28 (`am/am-add074-dknxszx93wzf-9932186f`) bundled CR-stripping for Cloudflare credentials, URL/wildcard trimming, Traefik provider detection, and `--remove` trimming. All of those changes are already in `origin/master` (commit `b46d089`, merged via PR #29). PR #28 is stale and should be closed as superseded.
+  - PR #30 (`am/am-add074-dkoilttpfj31-9a0c6630`) contains four real, unmerged robustness fixes for `hart-domain-sync.sh`:
+    1. `fix(sync): trim and CR-strip MANAGE_DNS`
+    2. `fix(sync): trim and CR-strip BOX_IP`
+    3. `fix(sync): trim and CR-strip BOX_IP6`
+    4. `fix(sync): trim and CR-strip hart auth token`
+    These ensure CRLF or whitespace padding in the env file does not silently disable DNS, pollute Cloudflare record targets, or break the hart Authorization header.
+- Dev should land the four fixes as clean, separate conventional commits on this branch; do not bundle the stale `AGENTS.md` scaffolding from PR #30.
+- `bash -n hart-domain-sync.sh hart-domain-hook.sh` already passes on the current branch.
+- QA runs the verification gate after the dev commits:
+  - `bash -n hart-domain-sync.sh hart-domain-hook.sh`
+  - `shellcheck hart-domain-sync.sh hart-domain-hook.sh` (if installed)
+  - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, and `--remove`
+  - regression tests for the new fixes:
+    - `MANAGE_DNS` with leading/trailing whitespace or CRLF; confirm the `MANAGE_DNS=1` check still enables DNS
+    - `BOX_IP` / `BOX_IP6` with CRLF/whitespace; confirm the generated Cloudflare record targets are clean IP addresses
+    - `AUTH_TOKEN` (from `HART_ADMIN_TOKEN` or `HART_TOKEN`) with CRLF/whitespace; confirm the hart `Authorization` header is not polluted
+    - `HART_URL` / `SERVICE_URL` with leading/trailing whitespace, CRs, and multiple trailing slashes
+    - `WILDCARD_DOMAIN` / `WILDCARD_INSTANCE_DOMAIN` with whitespace and uppercase letters
+    - `CF_ENV` with CRLF line endings and quoted values
+    - `TRAEFIK_MAIN` with commented `directory:` / `filename:` lines and leading whitespace
+    - `--remove` with whitespace or mixed case
+  - confirm generated Traefik `Host()` / `HostRegexp()` rules and Cloudflare DNS targets are lowercase
+- If the gate passes, close PR #28 and PR #30 as superseded and the original objective is resolved. If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR.
