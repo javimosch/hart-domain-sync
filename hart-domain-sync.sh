@@ -40,6 +40,8 @@ TRAEFIK_MAIN="${TRAEFIK_MAIN:-/etc/traefik/traefik.yml}"
 SINGLE_FILE="${SINGLE_FILE:-/etc/traefik/dynamic.yml}"   # target in file mode
 BOX_IP="${BOX_IP:-}"                            # REQUIRED for DNS: this box's public IPv4 (A target)
 BOX_IP6="${BOX_IP6:-}"                          # this box's public IPv6 (AAAA target) — set if your zone has a proxied wildcard
+BOX_IP="$(trim "$BOX_IP")"
+BOX_IP6="$(trim "$BOX_IP6")"
 SERVICE_URL="${SERVICE_URL:-http://127.0.0.1:8799}"   # how Traefik reaches hart
 # Remove any trailing slashes so the hart API call doesn't end up with a doubled
 # (or tripled) path separator, and the Traefik upstream URL is always a clean URL.
