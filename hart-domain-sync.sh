@@ -65,6 +65,10 @@ CF_ENV="${CF_ENV:-/etc/traefik/cloudflare.env}" # file holding CF_API_EMAIL + CF
 CF_ENV="$(trim "$CF_ENV")"
 MANAGE_DNS="${MANAGE_DNS:-1}"                   # 0 = don't touch Cloudflare DNS at all
 MANAGE_DNS="$(trim "$MANAGE_DNS")"
+# Seconds to wait for new DNS records to propagate before restarting Traefik for ACME.
+PROPAGATE_WAIT="${PROPAGATE_WAIT:-10}"
+PROPAGATE_WAIT="$(trim "$PROPAGATE_WAIT")"
+[ -n "$PROPAGATE_WAIT" ] || PROPAGATE_WAIT=10
 WILDCARD_DOMAIN="${WILDCARD_DOMAIN:-}"          # e.g. hart.intrane.fr — write one Host(\`*.hart.intrane.fr\`) router for all subdomains
 WILDCARD_INSTANCE_DOMAIN="${WILDCARD_INSTANCE_DOMAIN:-}"  # e.g. hart.intrane.fr — subdomains are covered by an external wildcard router/DNS; skip per-domain files
 PREFIX="hart-"
@@ -612,8 +616,8 @@ fi
 
 # --- 5. new domain(s) -> force one clean ACME attempt (DNS has been set + given time to propagate) ---
 if [ "$NEW" = 1 ]; then
-  log "new domain(s) added — waiting ${PROPAGATE_WAIT:-10}s for DNS, then restarting Traefik for ACME"
-  sleep "${PROPAGATE_WAIT:-10}"
+  log "new domain(s) added — waiting ${PROPAGATE_WAIT}s for DNS, then restarting Traefik for ACME"
+  sleep "$PROPAGATE_WAIT"
   if sudo -n systemctl restart traefik 2>/dev/null; then
     log "traefik restarted — cert(s) will issue on the retry"
   else
