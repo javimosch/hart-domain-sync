@@ -115,6 +115,8 @@ cf_val() {
   value="${value%"${value##*[![:space:]]}"}"
   value="${value#\"}"; value="${value%\"}"
   value="${value#\'}"; value="${value%\'}"
+  # CRLF-padded env files can leave carriage returns inside quoted values; strip them.
+  value="${value//$'\r'/}"
   printf '%s\n' "$value"
 }
 CF_EMAIL="$(cf_val CF_API_EMAIL)"
