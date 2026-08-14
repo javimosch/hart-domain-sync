@@ -178,3 +178,16 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
   - regression tests for the robustness fixes now in `origin/master`: multiple trailing slashes on `HART_URL`/`SERVICE_URL`, JSON bodies with spaces/special characters, `zone_for()` with glob-like zone names, and uppercase wildcard inputs
   - confirm generated Traefik `Host()`/`HostRegexp()` rules and Cloudflare DNS targets are lowercase
 - If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the objective is resolved and no further action is needed.
+
+## 2026-08-14 architect plan (am-add074-dkoilttpfj31-9a0c6630)
+
+- `gh issue list --state open` returns `[]`; issues #1, #16, and #17 are CLOSED. No open GitHub issues remain to fix.
+- `gh pr list --state open` returns only PR #28 (`am/am-add074-dknxszx93wzf-9932186f`). Its `hart-domain-sync.sh` changes (strip CR from Cloudflare credentials, trim whitespace/CRs from URLs and wildcard inputs, ignore commented provider lines in Traefik auto-detection, trim and lower-case the `--remove` argument) are already present in `origin/master` (commit `b46d089`, merged via PR #29). The remaining branch diff only rearranges those cleanups and would remove the extra line-level `\r` strip in `cf_val()`.
+- No additional code change is required to resolve the reported edge cases. PR #28 is stale and merge-conflicting in effect; it should be closed as superseded.
+- QA runs the verification gate:
+  - `bash -n hart-domain-sync.sh hart-domain-hook.sh`
+  - `shellcheck hart-domain-sync.sh hart-domain-hook.sh` (if installed)
+  - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, and `--remove`
+  - regression tests for the robustness fixes already in `origin/master`: URLs with multiple trailing slashes and embedded CRs, `WILDCARD_DOMAIN`/`WILDCARD_INSTANCE_DOMAIN` with leading/trailing whitespace and uppercase letters, `CF_ENV` with CRLF line endings and quoted values, `TRAEFIK_MAIN` with commented `directory:`/`filename:` lines and leading whitespace, and `--remove` with whitespace or mixed case
+  - confirm generated Traefik `Host()` / `HostRegexp()` rules and Cloudflare DNS targets are lowercase
+- If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR; otherwise close PR #28 as superseded and the objective is resolved.
