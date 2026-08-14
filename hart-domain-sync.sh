@@ -43,7 +43,9 @@ TRAEFIK_MAIN="$(trim "$TRAEFIK_MAIN")"
 SINGLE_FILE="${SINGLE_FILE:-/etc/traefik/dynamic.yml}"   # target in file mode
 SINGLE_FILE="$(trim "$SINGLE_FILE")"
 BOX_IP="${BOX_IP:-}"                            # REQUIRED for DNS: this box's public IPv4 (A target)
+BOX_IP="$(trim "$BOX_IP")"
 BOX_IP6="${BOX_IP6:-}"                          # this box's public IPv6 (AAAA target) — set if your zone has a proxied wildcard
+BOX_IP6="$(trim "$BOX_IP6")"
 SERVICE_URL="${SERVICE_URL:-http://127.0.0.1:8799}"   # how Traefik reaches hart
 # Remove any trailing slashes so the hart API call doesn't end up with a doubled
 # (or tripled) path separator, and the Traefik upstream URL is always a clean URL.
@@ -56,11 +58,13 @@ CERT_RESOLVER="${CERT_RESOLVER:-letsencrypt}"   # Traefik cert resolver name
 CF_ENV="${CF_ENV:-/etc/traefik/cloudflare.env}" # file holding CF_API_EMAIL + CF_API_KEY
 CF_ENV="$(trim "$CF_ENV")"
 MANAGE_DNS="${MANAGE_DNS:-1}"                   # 0 = don't touch Cloudflare DNS at all
+MANAGE_DNS="$(trim "$MANAGE_DNS")"
 WILDCARD_DOMAIN="${WILDCARD_DOMAIN:-}"          # e.g. hart.intrane.fr — write one Host(\`*.hart.intrane.fr\`) router for all subdomains
 WILDCARD_INSTANCE_DOMAIN="${WILDCARD_INSTANCE_DOMAIN:-}"  # e.g. hart.intrane.fr — subdomains are covered by an external wildcard router/DNS; skip per-domain files
 PREFIX="hart-"
 REAL_DEST="$DEST"                               # original destination, even if file mode stages elsewhere
 AUTH_TOKEN="${HART_ADMIN_TOKEN:-${HART_TOKEN:-}}"  # send Authorization if the hart instance requires a token
+AUTH_TOKEN="$(trim "$AUTH_TOKEN")"
 
 # DNS/HTTP hostnames are case-insensitive; normalise wildcard inputs so
 # mixed-case hart domains still match the configured wildcard.
