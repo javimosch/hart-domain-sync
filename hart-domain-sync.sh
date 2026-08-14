@@ -24,8 +24,15 @@ trim() { printf '%s' "$1" | LC_ALL=C tr -d '\r' | LC_ALL=C sed 's/^[[:space:]]*/
 # HART_DOMAIN_HOOK path gets the same settings as the timer. Simple KEY=value, operator-owned.
 CONF="${DOMAIN_SYNC_ENV:-/etc/hart/domain-sync.env}"
 CONF="$(trim "$CONF")"
-# shellcheck source=/dev/null
-[ -f "$CONF" ] && . "$CONF"
+# Strip CRLF line endings before sourcing; otherwise bash may parse trailing \r as an
+# extra token and either fail the assignment or bake the carriage return into values.
+if [ -f "$CONF" ]; then
+  CONF_TMP=$(mktemp) || { echo "cannot create temp config" >&2; exit 1; }
+  LC_ALL=C sed 's/\r$//' "$CONF" > "$CONF_TMP"
+  # shellcheck source=/dev/null
+  . "$CONF_TMP"
+  rm -f "$CONF_TMP"
+fi
 
 HART_URL="${HART_URL:-http://127.0.0.1:8799}"   # hart daemon (default local)
 DEST="${DEST:-/etc/traefik/dynamic.d}"          # Traefik watched directory (directory mode)
