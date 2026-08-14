@@ -18,7 +18,7 @@
 # config file below — the built-in defaults are generic conventions, NOT host addresses.
 set -uo pipefail
 
-trim() { printf '%s' "$1" | LC_ALL=C sed 's/^[[:space:]]*//;s/[[:space:]]*$//'; }
+trim() { printf '%s' "$1" | LC_ALL=C tr -d '\r' | LC_ALL=C sed 's/^[[:space:]]*//;s/[[:space:]]*$//'; }
 
 # Config file (also loaded by the systemd unit's EnvironmentFile) — sourced here too so the
 # HART_DOMAIN_HOOK path gets the same settings as the timer. Simple KEY=value, operator-owned.
