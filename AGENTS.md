@@ -212,3 +212,19 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
     - `remove` hook event with a whitespace-padded or CRLF-padded domain
   - confirm generated Traefik `Host()` / `HostRegexp()` rules and Cloudflare DNS targets are lowercase
 - If the gate passes, close PR #31 as superseded by the clean conventional commits and close PR #28 as superseded; the original objective is resolved. If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR.
+
+## 2026-08-14 architect plan (am-add074-dkonmj20uf49-2d6b03da)
+
+- `gh issue list --state open` returns `[]`; issues #1, #16, and #17 are CLOSED. No open GitHub issues remain to fix.
+- `gh pr list --state open` returns PR #28 and PR #31:
+  - PR #28 (`am/am-add074-dknxszx93wzf-9932186f`) only rearranges robustness fixes that are already in `origin/master` (commits `b46d089` and `4fb7788` via PR #29 and #30). It should be closed as superseded.
+  - PR #31 (`am/am-add074-dkojhzmy9op8-48d811c5`) bundles a docs plan and code commits. The robustness fixes it contained — `fix(sync): trim path and file config variables after loading` and `fix(hook): trim env paths and remove argument before dispatch` — are already present in `origin/master` (commit `bc176dc` merged via PR #32). It should be closed as superseded.
+- The current branch `am/am-add074-dkonmj20uf49-2d6b03da` is at the same commit as `origin/master` (`bc176dc`) with a clean worktree. No additional dev code change is required to resolve the open issue list.
+- `bash -n hart-domain-sync.sh hart-domain-hook.sh` passes; `shellcheck hart-domain-sync.sh hart-domain-hook.sh` passes.
+- QA runs the verification gate:
+  - `bash -n hart-domain-sync.sh hart-domain-hook.sh`
+  - `shellcheck hart-domain-sync.sh hart-domain-hook.sh`
+  - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, and `--remove`
+  - regression tests for the robustness fixes now in `origin/master`: config env file with CRLF/whitespace in `CONF`, `DEST`, `TRAEFIK_MAIN`, `SINGLE_FILE`, and `CF_ENV`; `HART_DOMAIN_SYNC` and `HART_DOMAIN_SYNC_LOG` with CRLF/whitespace; `remove` hook event with a whitespace-padded or CRLF-padded domain; URLs with multiple trailing slashes and embedded CRs; `WILDCARD_DOMAIN`/`WILDCARD_INSTANCE_DOMAIN` with leading/trailing whitespace and uppercase letters; `CF_ENV` with CRLF line endings and quoted values; `TRAEFIK_MAIN` with commented `directory:`/`filename:` lines and leading whitespace; `--remove` with whitespace or mixed case
+  - confirm generated Traefik `Host()` / `HostRegexp()` rules and Cloudflare DNS targets are lowercase
+- If the gate passes, close PR #28 and PR #31 as superseded and the original objective is resolved. If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR.
