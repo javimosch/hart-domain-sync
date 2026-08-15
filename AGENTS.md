@@ -271,3 +271,16 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
   - regression tests for the fixes now in master: `HART_URL`/`SERVICE_URL` with multiple trailing slashes and a bare scheme (`http://`); `PROPAGATE_WAIT` with whitespace, non-numeric text, a negative value, or a missing value; hook `remove` with CRLF/whitespace-padded event name and/or domain
   - confirm generated Traefik `Host()` / `HostRegexp()` rules and Cloudflare DNS targets are lowercase
 - If the gate passes, close PR #37 as superseded and the original objective is resolved. If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR.
+
+## 2026-08-15 architect plan (am-add074-dkpfvac11qx6-8ba459b3)
+
+- `gh issue list --state open` returns `[]`; issues #1, #16, and #17 are CLOSED. No open GitHub issues remain to fix.
+- `gh pr list --state open` returns only PR #39 (`am/am-add074-dkpez4cdqjhl-f28298ef`, `docs(agents): add current run architect plan and final status`). Its `hart-domain-sync.sh` change — replacing the `awk` comparison in `rule_claimed()` with a pure bash loop so `Host(\`foo\`)` rules are compared literally — is now committed on this branch as `100a590` (`fix(sync): use pure bash loop in rule_claimed to avoid awk quote expansion`). The bundled `AGENTS.md` plan in PR #39 is stale and should not be merged as-is; PR #39 should be closed as superseded.
+- The current branch `am-add074-dkpfvac11qx6-8ba459b3` is one commit ahead of `origin/master` (`86ec8d7`) with the `rule_claimed` fix. `bash -n hart-domain-sync.sh hart-domain-hook.sh` passes and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` (if installed) passes.
+- No additional dev code change is required. QA runs the verification gate:
+  - `bash -n hart-domain-sync.sh hart-domain-hook.sh`
+  - `shellcheck hart-domain-sync.sh hart-domain-hook.sh` (if installed)
+  - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, and `--remove`
+  - regression test for the new fix: seed an existing Traefik router with a `rule:` containing a backtick (e.g. `Host(\`foo.example.com\`)`), then attempt to add the same domain and confirm the sync detects the collision and does not overwrite; also confirm a non-matching domain is not falsely claimed
+  - confirm generated Traefik `Host()` / `HostRegexp()` rules and Cloudflare DNS targets are lowercase
+- If the gate passes, close PR #39 as superseded and the original objective is resolved. If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR.
