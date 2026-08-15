@@ -326,3 +326,12 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
   - regression tests with a non-C locale (e.g. `LC_ALL=fr_FR.UTF-8`): `cf_val()` parses `CF_API_EMAIL`/`CF_API_KEY` from a `CF_ENV` with leading whitespace, an `export` prefix, and CRLF; `slug()` produces the same slug for mixed-case/dotted inputs; Traefik provider auto-detection still distinguishes `directory:` vs `filename:` with leading whitespace and comments; `rule_claimed()` still detects a `Host(\`foo\`)` collision and does not falsely claim a non-matching domain
   - confirm generated Traefik `Host()` / `HostRegexp()` rules and Cloudflare DNS targets are lowercase
 - If the gate passes, close PR #40 and PR #42 as superseded by `origin/master`; the original objective is resolved. If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR.
+
+## 2026-08-15 final status (am-add074-dkpijrj83rk4-a10d8c0e)
+
+- `gh issue list --state open` returns `[]`; issues #1, #16, and #17 remain CLOSED. No open GitHub issues remain to fix.
+- `gh pr list --state open` returned PR #40 and PR #42; both have been closed as superseded by `origin/master`.
+- PR #40's `rule_claimed` awk→bash fix, `cf_val` `LC_ALL=C` grep, and `slug()` dot-to-dash `LC_ALL=C` `tr` are already in `origin/master` (via PR #39 and PR #41).
+- PR #42's three locale-hardening code fixes and its `AGENTS.md` plan are already in `origin/master` (via PR #41).
+- `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass.
+- No dev code change was required; the original objective is resolved.
