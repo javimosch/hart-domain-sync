@@ -295,3 +295,19 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
   - regression tests for the robustness fixes now in `origin/master`: `HART_URL`/`SERVICE_URL` with multiple trailing slashes and a bare scheme (`http://`); `PROPAGATE_WAIT` with whitespace, non-numeric text, a negative value, or a missing value; hook `remove` with CRLF/whitespace-padded event name and/or domain; JSON payloads with spaces/special characters; `zone_for()` with glob-like zone names; `CF_ENV` with CRLF line endings, quoted values, and `export` prefixes; config path/file variables with CRLF/whitespace; leading-whitespace and commented `directory:`/`filename:` lines in `TRAEFIK_MAIN`
   - confirm generated Traefik `Host()` / `HostRegexp()` rules and Cloudflare DNS targets are lowercase
 - If the gate passes, the objective is resolved and no further action is needed. If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR.
+
+## 2026-08-15 architect plan (am-add074-dkpgrgis9zhh-d3c94462)
+
+- `gh issue list --state open` returns `[]`; issues #1, #16, and #17 are CLOSED. No open GitHub issues remain to fix.
+- `gh pr list --state open` returns only PR #40 (`am/am-add074-dkpfvac11qx6-8ba459b3`, `fix(sync): use pure bash loop in rule_claimed to avoid awk quote expansion`). It is merge-conflicting and partly superseded: its `rule_claimed` awk→bash fix is already in `origin/master` (commit `8851c55` / PR #39). It still contains two real, unmerged robustness fixes:
+  1. `fix(cf): run `cf_val` grep with `LC_ALL=C` for locale-independent `[:space:]` matching` — the `grep` inside `cf_val()` (line 143) currently uses the caller's locale for the `[[:space:]]` and optional `export` prefix regex, which can fail under non-C locales. Add `LC_ALL=C` to that `grep` call.
+  2. `fix(sync): run the dot-to-dash `tr` in `slug()` with `LC_ALL=C`` — `slug()` (line 168) already forces the C locale on the case and character-filter `tr` commands, but the dot-to-dash `tr` is missing it, so slugs can vary under non-English locales. Add `LC_ALL=C` to that `tr`.
+- The current branch `am-add074-dkpgrgis9zhh-d3c94462` is at `origin/master` (`8851c55`) with a clean worktree. `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` (if installed) already pass.
+- Dev should land these two locale fixes as clean, separate conventional commits on this branch (the one-line changes; do not bundle the stale `AGENTS.md` plan from PR #40).
+- QA runs the verification gate:
+  - `bash -n hart-domain-sync.sh hart-domain-hook.sh`
+  - `shellcheck hart-domain-sync.sh hart-domain-hook.sh` (if installed)
+  - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, and `--remove`
+  - regression tests for the two new fixes: run with a non-C locale (e.g. `LC_ALL=fr_FR.UTF-8`) and verify `cf_val()` still parses `CF_API_EMAIL`/`CF_API_KEY` from a `CF_ENV` with leading whitespace, an `export` prefix, and CRLF, and that `slug()` produces the same slug for mixed-case/dotted inputs as it does under `LC_ALL=C`; also confirm `rule_claimed` still detects a `Host(\`foo\`)` collision
+  - confirm generated Traefik `Host()` / `HostRegexp()` rules and Cloudflare DNS targets are lowercase
+- If the gate passes, close PR #40 as superseded and the original objective is resolved. If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR.
