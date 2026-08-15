@@ -335,3 +335,18 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
 - PR #42's three locale-hardening code fixes and its `AGENTS.md` plan are already in `origin/master` (via PR #41).
 - `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass.
 - No dev code change was required; the original objective is resolved.
+
+## 2026-08-15 architect plan (am-add074-dkpm8zkjqtyk-30073cad)
+
+- `gh issue list --state open` returns `[]`; issues #1, #16, and #17 remain CLOSED. No open GitHub issues remain to fix.
+- `gh pr list --state open` returns PR #45 and PR #46:
+  - PR #45 (`am/am-add074-dkpkgo3rkr73-37b3e04c`, `docs(agents): add current run architect plan and PR #44 status`) bundles a stale `AGENTS.md` plan and three locale-robustness code changes. All three code changes are already in `origin/master`: the hook event is lower-cased before the `case` match in `hart-domain-hook.sh` (line 20); `HART_URL`/`SERVICE_URL` trailing-slash stripping uses `url_has_path_after_scheme()` evaluated under `LC_ALL=C` in `hart-domain-sync.sh` (lines 65-67); `regex_escape()` runs `sed` under `LC_ALL=C` (line 172). Therefore PR #45 is stale and should be closed as superseded.
+  - PR #46 (`am/am-add074-dkplcuvzl4sn-37a7ebcd`, `docs(agents): add current run architect plan and close stale PR #45`) only adds a stale `AGENTS.md` plan; since #45 itself is already superseded, #46 is also stale and should be closed as superseded.
+- The current branch `am-add074-dkpm8zkjqtyk-30073cad` is at `origin/master` (`63aa5cd`) with a clean worktree. `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass. No additional dev code change is required to resolve the (empty) open issue list.
+- QA runs the verification gate:
+  - `bash -n hart-domain-sync.sh hart-domain-hook.sh`
+  - `shellcheck hart-domain-sync.sh hart-domain-hook.sh` (if installed)
+  - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, and `--remove`
+  - regression tests for the robustness fixes now in `origin/master`: mixed-case hook events (`REMOVE`, `Remove`) dispatch to the fast `--remove` path; `HART_URL`/`SERVICE_URL` with multiple trailing slashes and a bare scheme (`http://`) are handled correctly; `regex_escape()` produces consistent dot-escaping under a non-C locale (e.g. `LC_ALL=fr_FR.UTF-8`); `cf_val()` still parses `CF_API_EMAIL`/`CF_API_KEY` from a `CF_ENV` with leading whitespace, `export` prefix, and CRLF; `slug()` produces the same slug for mixed-case/dotted inputs; Traefik provider auto-detection still distinguishes `directory:` vs `filename:` with leading whitespace and comments; `rule_claimed()` still detects a `Host(\`foo\`)` collision and does not falsely claim a non-matching domain
+  - confirm generated Traefik `Host()` / `HostRegexp()` rules and Cloudflare DNS targets are lowercase
+- If the gate passes, close PR #45 and PR #46 as superseded and the original objective is resolved. If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR.
