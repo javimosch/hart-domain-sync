@@ -243,3 +243,18 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
   - regression tests for the robustness fixes now in `origin/master`: CRLF/whitespace in `CONF`, `DEST`, `TRAEFIK_MAIN`, `SINGLE_FILE`, `CF_ENV`, `HART_URL`, `SERVICE_URL`, `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, `BOX_IP`, `BOX_IP6`, `MANAGE_DNS`, the hart auth token, and the `--remove` argument; `HART_DOMAIN_SYNC`/`HART_DOMAIN_SYNC_LOG` and the hook `remove` event with CRLF/whitespace-padded values; `TRAEFIK_MAIN` with commented/leading-whitespace `directory:`/`filename:` lines; multiple trailing slashes on `HART_URL`/`SERVICE_URL`; `CF_ENV` with CRLF line endings and quoted values
   - confirm generated Traefik `Host()` / `HostRegexp()` rules and Cloudflare DNS targets are lowercase
 - If the gate passes, close PR #28 and PR #31 as superseded and the original objective is resolved. If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR.
+
+## 2026-08-15 architect plan (am-add074-dkpbnqosht0a-026ad44d)
+
+- `gh issue list --state open` returns `[]`; issues #1, #16, and #17 are CLOSED. No open GitHub issues remain to fix.
+- `gh pr list --state open` returns PR #28 and PR #31. Both are stale and fully superseded by `origin/master` (commit `26896ea`):
+  - PR #28 (`fix(cf): strip carriage returns from Cloudflare credential env values`) — its CR-strip/trim/provider changes are already in master via PR #29 (`b46d089`).
+  - PR #31 (`docs(agents): add current run architect plan and PR #28/#30 status`) — its remaining path/file config, IP/DNS/auth trimming, config-file CRLF stripping, and hook env/remove trimming changes are already in master via PR #32/33/34 (`bc176dc`/`4481939`/`26896ea`).
+- The current branch `am/am-add074-dkpbnqosht0a-026ad44d` is at `origin/master` (`26896ea`) with a clean worktree. `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass. No additional dev code change is required to resolve the (empty) open issue list.
+- QA runs the verification gate:
+  - `bash -n hart-domain-sync.sh hart-domain-hook.sh`
+  - `shellcheck hart-domain-sync.sh hart-domain-hook.sh`
+  - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, and `--remove`
+  - regression tests for the robustness fixes now in `origin/master`: CRLF/whitespace in `CONF`, `DEST`, `TRAEFIK_MAIN`, `SINGLE_FILE`, `CF_ENV`, `HART_URL`, `SERVICE_URL`, `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, `BOX_IP`, `BOX_IP6`, `MANAGE_DNS`, `TRAEFIK_MODE`, `ENTRYPOINT`, `CERT_RESOLVER`, `PROPAGATE_WAIT`, the hart auth token, and the `--remove` argument; `HART_DOMAIN_SYNC`/`HART_DOMAIN_SYNC_LOG` and the hook `remove` event with CRLF/whitespace-padded values; `TRAEFIK_MAIN` with commented/leading-whitespace `directory:`/`filename:` lines; multiple trailing slashes on `HART_URL`/`SERVICE_URL`; `CF_ENV` with CRLF line endings and quoted values
+  - confirm generated Traefik `Host()` / `HostRegexp()` rules and Cloudflare DNS targets are lowercase
+- If the gate passes, close PR #28 and PR #31 as superseded and the original objective is resolved. If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR.
