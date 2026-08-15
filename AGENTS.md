@@ -258,3 +258,16 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
   - regression tests for the robustness fixes now in `origin/master`: CRLF/whitespace in `CONF`, `DEST`, `TRAEFIK_MAIN`, `SINGLE_FILE`, `CF_ENV`, `HART_URL`, `SERVICE_URL`, `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, `BOX_IP`, `BOX_IP6`, `MANAGE_DNS`, `TRAEFIK_MODE`, `ENTRYPOINT`, `CERT_RESOLVER`, `PROPAGATE_WAIT`, the hart auth token, and the `--remove` argument; `HART_DOMAIN_SYNC`/`HART_DOMAIN_SYNC_LOG` and the hook `remove` event with CRLF/whitespace-padded values; `TRAEFIK_MAIN` with commented/leading-whitespace `directory:`/`filename:` lines; multiple trailing slashes on `HART_URL`/`SERVICE_URL`; `CF_ENV` with CRLF line endings and quoted values
   - confirm generated Traefik `Host()` / `HostRegexp()` rules and Cloudflare DNS targets are lowercase
 - If the gate passes, close PR #28 and PR #31 as superseded and the original objective is resolved. If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR.
+
+## 2026-08-15 architect plan (am-add074-dkpe4i08njvd-d1c8eced)
+
+- `gh issue list --state open` returns `[]`; issues #1, #16, and #17 are CLOSED. No open GitHub issues remain to fix.
+- `gh pr list --state open` returns only PR #37 (`am/am-add074-dkpdbek2il9n-e0a10a1a`). Its `hart-domain-sync.sh` and `hart-domain-hook.sh` changes (scheme-slash guard, `PROPAGATE_WAIT` validation, hook event trim) are already merged into `origin/master` via PR #36 (`4f52390`). The remaining unmerged portion is the previous run's `AGENTS.md` architect plan, so PR #37 is stale and should be closed as superseded.
+- The current branch `am/am-add074-dkpe4i08njvd-d1c8eced` is at `origin/master` (`4f52390`) with a clean worktree. `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass.
+- QA runs the verification gate:
+  - `bash -n hart-domain-sync.sh hart-domain-hook.sh`
+  - `shellcheck hart-domain-sync.sh hart-domain-hook.sh` (if installed)
+  - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, and `--remove`
+  - regression tests for the fixes now in master: `HART_URL`/`SERVICE_URL` with multiple trailing slashes and a bare scheme (`http://`); `PROPAGATE_WAIT` with whitespace, non-numeric text, a negative value, or a missing value; hook `remove` with CRLF/whitespace-padded event name and/or domain
+  - confirm generated Traefik `Host()` / `HostRegexp()` rules and Cloudflare DNS targets are lowercase
+- If the gate passes, close PR #37 as superseded and the original objective is resolved. If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR.
