@@ -295,3 +295,23 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
   - regression tests for the robustness fixes now in `origin/master`: `HART_URL`/`SERVICE_URL` with multiple trailing slashes and a bare scheme (`http://`); `PROPAGATE_WAIT` with whitespace, non-numeric text, a negative value, or a missing value; hook `remove` with CRLF/whitespace-padded event name and/or domain; JSON payloads with spaces/special characters; `zone_for()` with glob-like zone names; `CF_ENV` with CRLF line endings, quoted values, and `export` prefixes; config path/file variables with CRLF/whitespace; leading-whitespace and commented `directory:`/`filename:` lines in `TRAEFIK_MAIN`
   - confirm generated Traefik `Host()` / `HostRegexp()` rules and Cloudflare DNS targets are lowercase
 - If the gate passes, the objective is resolved and no further action is needed. If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR.
+
+## 2026-08-15 architect plan (am-add074-dkphnlvay5ak-17739cfd)
+
+- `gh issue list --state open` returns `[]`; issues #1, #16, and #17 are CLOSED. No open GitHub issues remain to fix.
+- `gh pr list --state open` returns PR #40 and PR #41:
+  - PR #40 (`am/am-add074-dkpfvac11qx6-8ba459b3`) is `CONFLICTING`. Its `rule_claimed` awk-to-bash fix is already in `origin/master` (commit `100a590` / PR #39). It still contains two real, unmerged locale robustness fixes: `LC_ALL=C` for the `cf_val()` `grep` and `LC_ALL=C` for the dot-to-dash `tr` in `slug()`.
+  - PR #41 (`am/am-add074-dkpgrgis9zhh-d3c94462`) is `MERGEABLE` and bundles the same two locale fixes plus a third: forcing `LC_ALL=C` on the Traefik provider layout auto-detection `awk` script. It supersedes PR #40.
+- The current branch `am/am-add074-dkphnlvay5ak-17739cfd` is at the same commit as `origin/master` (`8851c55`) with a clean worktree. The three locale-hardening fixes are **not** yet in `origin/master`:
+  1. `fix(cf): run `cf_val` grep with `LC_ALL=C` for locale-independent bracket matching` — line 143 currently uses the caller's locale for `[[...]]`/`[[:space:]]`; prefix with `LC_ALL=C`.
+  2. `fix(sync): run the dot-to-dash `tr` in `slug()` with `LC_ALL=C`` — line 168 already forces C locale on the case and char-filter `tr` calls, but the `tr '.' '-'` is missing it; add `LC_ALL=C`.
+  3. `fix(sync): force C locale while detecting traefik provider layout` — the `awk` auto-detection on line 259 uses `[[...]]` character classes; run it with `LC_ALL=C`.
+- Dev should land these three fixes as clean, separate conventional commits on this branch. Do **not** bundle the stale `AGENTS.md` plans from PR #40 or PR #41.
+- `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` (if installed) already pass on the current branch.
+- QA runs the standard verification gate after the dev commits:
+  - `bash -n hart-domain-sync.sh hart-domain-hook.sh`
+  - `shellcheck hart-domain-sync.sh hart-domain-hook.sh` (if installed)
+  - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, and `--remove`
+  - regression tests for the new locale fixes: run with a non-C locale (e.g. `LC_ALL=fr_FR.UTF-8`) and verify `cf_val()` still parses `CF_API_EMAIL`/`CF_API_KEY` from a `CF_ENV` with leading whitespace, an `export` prefix, and CRLF; `slug()` produces the same slug for dotted/mixed-case inputs as it does under `LC_ALL=C`; `rule_claimed()` still detects a `Host(\`foo\`)` collision; and Traefik provider auto-detection still correctly distinguishes `directory:` vs `filename:` with leading whitespace and comments in `TRAEFIK_MAIN`
+  - confirm generated Traefik `Host()` / `HostRegexp()` rules and Cloudflare DNS targets are lowercase
+- If the gate passes, close PR #40 and PR #41 as superseded by the clean conventional commits on this branch; the original objective is resolved. If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR.
