@@ -140,7 +140,7 @@ strip_env_comment() {
 cf_val() {
   local key="$1" line value
   [ -f "$CF_ENV" ] || return
-  line=$(grep -i "^[[:space:]]*\(export[[:space:]]\{1,\}\)\{0,1\}${key}[[:space:]]*=" "$CF_ENV" 2>/dev/null | head -1) || true
+  line=$(LC_ALL=C grep -i "^[[:space:]]*\(export[[:space:]]\{1,\}\)\{0,1\}${key}[[:space:]]*=" "$CF_ENV" 2>/dev/null | head -1) || true
   [ -n "$line" ] || return
   line="$(printf '%s' "$line" | LC_ALL=C tr -d '\r')"
   value="${line#*=}"
@@ -165,7 +165,7 @@ cf() { # cf <METHOD> <path> [json-body]
   curl "${args[@]}"
 }
 
-slug() { printf '%s' "$1" | LC_ALL=C tr '[:upper:]' '[:lower:]' | tr '.' '-' | LC_ALL=C tr -cd 'a-z0-9-'; }
+slug() { printf '%s' "$1" | LC_ALL=C tr '[:upper:]' '[:lower:]' | LC_ALL=C tr '.' '-' | LC_ALL=C tr -cd 'a-z0-9-'; }
 regex_escape() { printf '%s' "$1" | sed 's/\./\\\\./g'; }
 
 fast_remove() { # fast_remove <domain>: delete the per-domain router without fetching hart
@@ -256,7 +256,7 @@ under_wildcard_instance() { # true if $1 is a strict subdomain of $WILDCARD_INST
 
 # resolve the provider layout before touching anything
 if [ "$TRAEFIK_MODE" = "auto" ]; then
-  if [ -r "$TRAEFIK_MAIN" ] && awk '/^[[:space:]]*#/{next} /^providers:/{p=1} p&&/^[[:space:]]+file:/{f=1} f&&/^[[:space:]]*directory:/{print "d";exit} f&&/^[[:space:]]*filename:/{print "f";exit}' "$TRAEFIK_MAIN" | grep -q d; then
+  if [ -r "$TRAEFIK_MAIN" ] && LC_ALL=C awk '/^[[:space:]]*#/{next} /^providers:/{p=1} p&&/^[[:space:]]+file:/{f=1} f&&/^[[:space:]]*directory:/{print "d";exit} f&&/^[[:space:]]*filename:/{print "f";exit}' "$TRAEFIK_MAIN" | grep -q d; then
     TRAEFIK_MODE="directory"
   else
     TRAEFIK_MODE="file"
