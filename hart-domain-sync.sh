@@ -58,10 +58,13 @@ BOX_IP6="$(trim "$BOX_IP6")"
 SERVICE_URL="${SERVICE_URL:-http://127.0.0.1:8799}"   # how Traefik reaches hart
 # Remove any trailing slashes so the hart API call doesn't end up with a doubled
 # (or tripled) path separator, and the Traefik upstream URL is always a clean URL.
+# The scheme guard is evaluated under LC_ALL=C so letter ranges in the regex are
+# not interpreted by the caller's locale.
 HART_URL="$(trim "$HART_URL")"
 SERVICE_URL="$(trim "$SERVICE_URL")"
-while [[ "$HART_URL" == */ ]] && [[ "$HART_URL" =~ ^[a-zA-Z]+://.+ ]]; do HART_URL="${HART_URL%/}"; done
-while [[ "$SERVICE_URL" == */ ]] && [[ "$SERVICE_URL" =~ ^[a-zA-Z]+://.+ ]]; do SERVICE_URL="${SERVICE_URL%/}"; done
+url_has_path_after_scheme() { (LC_ALL=C; [[ "$1" =~ ^[[:alpha:]]+://. ]]); }
+while [[ "$HART_URL" == */ ]] && url_has_path_after_scheme "$HART_URL"; do HART_URL="${HART_URL%/}"; done
+while [[ "$SERVICE_URL" == */ ]] && url_has_path_after_scheme "$SERVICE_URL"; do SERVICE_URL="${SERVICE_URL%/}"; done
 ENTRYPOINT="${ENTRYPOINT:-websecure}"           # Traefik TLS entrypoint name
 ENTRYPOINT="$(trim "$ENTRYPOINT")"
 [ -n "$ENTRYPOINT" ] || ENTRYPOINT=websecure
@@ -166,7 +169,7 @@ cf() { # cf <METHOD> <path> [json-body]
 }
 
 slug() { printf '%s' "$1" | LC_ALL=C tr '[:upper:]' '[:lower:]' | LC_ALL=C tr '.' '-' | LC_ALL=C tr -cd 'a-z0-9-'; }
-regex_escape() { printf '%s' "$1" | sed 's/\./\\\\./g'; }
+regex_escape() { printf '%s' "$1" | LC_ALL=C sed 's/\./\\\\./g'; }
 
 fast_remove() { # fast_remove <domain>: delete the per-domain router without fetching hart
   local domain="$1" s f key changed
