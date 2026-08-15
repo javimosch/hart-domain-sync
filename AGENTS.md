@@ -311,3 +311,18 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
   - regression tests for the two new fixes: run with a non-C locale (e.g. `LC_ALL=fr_FR.UTF-8`) and verify `cf_val()` still parses `CF_API_EMAIL`/`CF_API_KEY` from a `CF_ENV` with leading whitespace, an `export` prefix, and CRLF, and that `slug()` produces the same slug for mixed-case/dotted inputs as it does under `LC_ALL=C`; also confirm `rule_claimed` still detects a `Host(\`foo\`)` collision
   - confirm generated Traefik `Host()` / `HostRegexp()` rules and Cloudflare DNS targets are lowercase
 - If the gate passes, close PR #40 as superseded and the original objective is resolved. If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR.
+
+## 2026-08-15 architect plan (am-add074-dkpijrj83rk4-a10d8c0e)
+
+- `gh issue list --state open` returns `[]`; issues #1, #16, and #17 are CLOSED. No open GitHub issues remain to fix.
+- `gh pr list --state open` returns PR #40 and PR #42:
+  - PR #40 (`am/am-add074-dkpfvac11qx6-8ba459b3`, `fix(sync): use pure bash loop in rule_claimed to avoid awk quote expansion`) is merge-conflicting and stale. Its `rule_claimed` awk→bash fix, `cf_val` `LC_ALL=C` grep, and `slug()` dot-to-dash `LC_ALL=C` `tr` are already in `origin/master` (via PR #39 and PR #41).
+  - PR #42 (`am/am-add074-dkphnlvay5ak-17739cfd`, `docs(agents): add current run architect plan and open PR #40/#41 status`) bundles the same three locale-hardening code fixes (`cf_val` grep, `slug()` dot-to-dash `tr`, Traefik provider `awk`) plus a stale `AGENTS.md` plan. All three code fixes are already in `origin/master` (commit `851189e` / PR #41).
+- The current branch `am/am-add074-dkpijrj83rk4-a10d8c0e` is at `origin/master` (`851189e`) with a clean worktree. `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` (if installed) both pass. No dev code change is required.
+- QA runs the verification gate:
+  - `bash -n hart-domain-sync.sh hart-domain-hook.sh`
+  - `shellcheck hart-domain-sync.sh hart-domain-hook.sh` (if installed)
+  - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, and `--remove`
+  - regression tests with a non-C locale (e.g. `LC_ALL=fr_FR.UTF-8`): `cf_val()` parses `CF_API_EMAIL`/`CF_API_KEY` from a `CF_ENV` with leading whitespace, an `export` prefix, and CRLF; `slug()` produces the same slug for mixed-case/dotted inputs; Traefik provider auto-detection still distinguishes `directory:` vs `filename:` with leading whitespace and comments; `rule_claimed()` still detects a `Host(\`foo\`)` collision and does not falsely claim a non-matching domain
+  - confirm generated Traefik `Host()` / `HostRegexp()` rules and Cloudflare DNS targets are lowercase
+- If the gate passes, close PR #40 and PR #42 as superseded by `origin/master`; the original objective is resolved. If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR.
