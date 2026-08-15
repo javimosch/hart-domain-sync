@@ -333,7 +333,11 @@ PYCLAIM
 
 # rule_claimed <domain> -> echoes the owning router name if the rule is taken
 rule_claimed() {
-  printf '%s\n' "$CLAIMED" | awk -F'\t' -v r="Host(\`$1\`)" '$1==r {print $2; exit}'
+  local want r owner
+  want='Host(\`'"$1"'\`)'
+  while IFS=$'\t' read -r r owner; do
+    [ "$r" = "$want" ] && { printf '%s' "$owner"; return 0; }
+  done <<<"$CLAIMED"
 }
 
 mkdir -p "$DEST" 2>/dev/null || { log "cannot create $DEST"; exit 1; }
