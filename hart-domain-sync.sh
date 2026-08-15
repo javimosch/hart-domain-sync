@@ -60,8 +60,8 @@ SERVICE_URL="${SERVICE_URL:-http://127.0.0.1:8799}"   # how Traefik reaches hart
 # (or tripled) path separator, and the Traefik upstream URL is always a clean URL.
 HART_URL="$(trim "$HART_URL")"
 SERVICE_URL="$(trim "$SERVICE_URL")"
-while [[ "$HART_URL" == */ ]]; do HART_URL="${HART_URL%/}"; done
-while [[ "$SERVICE_URL" == */ ]]; do SERVICE_URL="${SERVICE_URL%/}"; done
+while [[ "$HART_URL" == */ ]] && [[ "$HART_URL" =~ ^[a-zA-Z]+://.+ ]]; do HART_URL="${HART_URL%/}"; done
+while [[ "$SERVICE_URL" == */ ]] && [[ "$SERVICE_URL" =~ ^[a-zA-Z]+://.+ ]]; do SERVICE_URL="${SERVICE_URL%/}"; done
 ENTRYPOINT="${ENTRYPOINT:-websecure}"           # Traefik TLS entrypoint name
 ENTRYPOINT="$(trim "$ENTRYPOINT")"
 [ -n "$ENTRYPOINT" ] || ENTRYPOINT=websecure
@@ -95,6 +95,14 @@ if [ "$MANAGE_DNS" = "1" ] && [ -z "$BOX_IP" ]; then
 fi
 
 log() { echo "$(date -u +%H:%M:%S) [hart-domain-sync] $*" >&2; }
+
+# PROPAGATE_WAIT is passed straight to sleep(); a non-numeric or negative
+# value would abort the script during the ACME wait. Guard it early so the
+# default is a safe, valid number of seconds.
+if [[ ! "$PROPAGATE_WAIT" =~ ^[0-9]+$ ]]; then
+  log "WARN: PROPAGATE_WAIT '$PROPAGATE_WAIT' is not a non-negative integer, using 10"
+  PROPAGATE_WAIT=10
+fi
 
 # Optional CLI mode: --remove <domain> (called by HART_DOMAIN_HOOK on removal).
 # It runs before any hart/CF I/O and exits after deleting the per-domain config.
