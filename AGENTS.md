@@ -335,3 +335,20 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
 - PR #42's three locale-hardening code fixes and its `AGENTS.md` plan are already in `origin/master` (via PR #41).
 - `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass.
 - No dev code change was required; the original objective is resolved.
+
+## 2026-08-15 architect plan (am-add074-dkpkgo3rkr73-37b3e04c)
+
+- `gh issue list --state open` returns `[]`; issues #1, #16, and #17 are CLOSED. No open GitHub issues remain to fix.
+- `gh pr list --state open` returns only PR #44 (`am/am-add074-dkpjfwzsf0dw-a905d668`, `fix(sync): run regex_escape sed under LC_ALL:C`). It is merge-clean and contains three real, unmerged robustness fixes not yet on `origin/master`:
+  1. `fix(hook): lower-case the hook event before the case match` — `hart-domain-hook.sh` currently only trims the event, so mixed-case events like `REMOVE` or `Remove` fall through to the full reconcile instead of the fast `--remove` path. Lower-case the trimmed event before the `case` match.
+  2. `fix(sync): run the HART_URL/SERVICE_URL scheme guard under LC_ALL=C` — the trailing-slash loop uses a bash `=~` regex with `[:alpha:]`/`[a-zA-Z]` ranges that can vary under non-C locales. Move the regex into a helper that sets `LC_ALL=C` and test for at least one character after `://`.
+  3. `fix(sync): run `regex_escape()` sed under LC_ALL=C` — the dot-escaping `sed` in `regex_escape()` runs in the caller's locale; force `LC_ALL=C` for consistent output.
+- The current branch `am-add074-dkpkgo3rkr73-37b3e04c` is at `origin/master` (`4132e82`) with a clean worktree. `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` (if installed) both pass.
+- Dev should land these three fixes as clean, separate conventional commits on this branch (do not bundle the stale `AGENTS.md` plan from PR #44).
+- QA runs the verification gate:
+  - `bash -n hart-domain-sync.sh hart-domain-hook.sh`
+  - `shellcheck hart-domain-sync.sh hart-domain-hook.sh` (if installed)
+  - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, and `--remove`
+  - regression tests for the new fixes: run under a non-C locale (e.g. `LC_ALL=fr_FR.UTF-8`) and confirm `cf_val()` still parses credentials, `slug()` produces the same slugs, Traefik provider auto-detection still works, `HART_URL`/`SERVICE_URL` with multiple trailing slashes and a bare scheme (`http://`) are handled correctly, mixed-case hook events dispatch to fast remove, and `regex_escape()` still produces a regex-escaped wildcard domain
+  - confirm generated Traefik `Host()` / `HostRegexp()` rules and Cloudflare DNS targets are lowercase
+- If the gate passes, close PR #44 as superseded and the original objective is resolved. If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR.
