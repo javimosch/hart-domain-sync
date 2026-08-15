@@ -60,8 +60,8 @@ SERVICE_URL="${SERVICE_URL:-http://127.0.0.1:8799}"   # how Traefik reaches hart
 # (or tripled) path separator, and the Traefik upstream URL is always a clean URL.
 HART_URL="$(trim "$HART_URL")"
 SERVICE_URL="$(trim "$SERVICE_URL")"
-while [[ "$HART_URL" == */ ]]; do HART_URL="${HART_URL%/}"; done
-while [[ "$SERVICE_URL" == */ ]]; do SERVICE_URL="${SERVICE_URL%/}"; done
+while [[ "$HART_URL" == */ ]] && [[ "$HART_URL" =~ ^[a-zA-Z]+://.+ ]]; do HART_URL="${HART_URL%/}"; done
+while [[ "$SERVICE_URL" == */ ]] && [[ "$SERVICE_URL" =~ ^[a-zA-Z]+://.+ ]]; do SERVICE_URL="${SERVICE_URL%/}"; done
 ENTRYPOINT="${ENTRYPOINT:-websecure}"           # Traefik TLS entrypoint name
 ENTRYPOINT="$(trim "$ENTRYPOINT")"
 [ -n "$ENTRYPOINT" ] || ENTRYPOINT=websecure
