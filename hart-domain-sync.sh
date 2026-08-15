@@ -166,7 +166,7 @@ cf() { # cf <METHOD> <path> [json-body]
 }
 
 slug() { printf '%s' "$1" | LC_ALL=C tr '[:upper:]' '[:lower:]' | LC_ALL=C tr '.' '-' | LC_ALL=C tr -cd 'a-z0-9-'; }
-regex_escape() { printf '%s' "$1" | sed 's/\./\\\\./g'; }
+regex_escape() { printf '%s' "$1" | LC_ALL=C sed 's/\./\\\\./g'; }
 
 fast_remove() { # fast_remove <domain>: delete the per-domain router without fetching hart
   local domain="$1" s f key changed
