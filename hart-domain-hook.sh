@@ -17,7 +17,8 @@ fi
 exec >/dev/null 2>&1
 
 [ -x "$SYNC" ] || { printf '%s\n' "HART_DOMAIN_SYNC not found or not executable: $SYNC" >>"$LOG"; exit 1; }
-case "${1:-}" in
+EVENT="$(trim "${1:-}")"
+case "$EVENT" in
   remove)
     DOMAIN="$(trim "${2:-}")"
     if [ -z "$DOMAIN" ]; then
