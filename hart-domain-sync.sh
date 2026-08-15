@@ -98,6 +98,14 @@ fi
 
 log() { echo "$(date -u +%H:%M:%S) [hart-domain-sync] $*" >&2; }
 
+# PROPAGATE_WAIT is passed straight to sleep(); a non-numeric or negative
+# value would abort the script during the ACME wait. Guard it early so the
+# default is a safe, valid number of seconds.
+if [[ ! "$PROPAGATE_WAIT" =~ ^[0-9]+$ ]]; then
+  log "WARN: PROPAGATE_WAIT '$PROPAGATE_WAIT' is not a non-negative integer, using 10"
+  PROPAGATE_WAIT=10
+fi
+
 # Optional CLI mode: --remove <domain> (called by HART_DOMAIN_HOOK on removal).
 # It runs before any hart/CF I/O and exits after deleting the per-domain config.
 REMOVE_DOMAIN=""
