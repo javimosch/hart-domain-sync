@@ -392,3 +392,23 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
   - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, and `--remove`
   - regression tests under a non-C locale (e.g. `LC_ALL=fr_FR.UTF-8`) for the locale-hardened code now in `origin/master`: `cf_val()` parsing with `export`/CRLF, `slug()` dot-to-dash, Traefik provider detection, `HART_URL`/`SERVICE_URL` trailing-slash and bare scheme handling, hook event lowercasing, `regex_escape()` dot escaping, mixed-case hart domains and wildcard inputs, and generated Traefik `Host()`/`HostRegexp()` rules and Cloudflare DNS targets lowercased
 - If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the objective is resolved and no further action is needed.
+
+## 2026-08-16 architect plan (am-add074-dkqhq69dmjvm-b17ad626)
+
+- `gh issue list --state open` returns `[]`; issues #1, #16, and #17 are CLOSED. No open GitHub issues remain to fix.
+- `gh pr list --state open` returns only PR #53 (`am/am-add074-dkqgu0ldgybe-787cd6ff`, `docs(agents): add current run architect plan and PR #52 status`). It is `mergeStateStatus: DIRTY` / `mergeable: CONFLICTING` and fully superseded by `origin/master` (`49cfbd5`):
+  - `fix(hook): strip trailing slashes from HART_DOMAIN_SYNC and HART_DOMAIN_SYNC_LOG` is already present in `hart-domain-hook.sh` (lines 9-15).
+  - `fix(sync): guard HART_URL and SERVICE_URL against a bare scheme` is already present in `hart-domain-sync.sh` (lines 66-68 and 112-119).
+  - `fix(cf): guard cf_upsert() against empty record content` is already present in `hart-domain-sync.sh` (line 389).
+- The current branch `am/am-add074-dkqhq69dmjvm-b17ad626` is at `origin/master` (`49cfbd5`) with a clean worktree. `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass.
+- No dev code change is required.
+- QA runs the final verification gate:
+  - `bash -n hart-domain-sync.sh hart-domain-hook.sh`
+  - `shellcheck hart-domain-sync.sh hart-domain-hook.sh` (if installed)
+  - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, and `--remove`
+  - regression tests for the three guards now in `origin/master`:
+    - `HART_DOMAIN_SYNC` and `HART_DOMAIN_SYNC_LOG` configured with one or more trailing slashes
+    - `HART_URL` set to a bare scheme (`http://`) and `SERVICE_URL` set to a bare scheme or missing host
+    - `cf_upsert()` invoked with an empty `BOX_IP` or `BOX_IP6` (or both)
+  - regression tests under a non-C locale (e.g. `LC_ALL=fr_FR.UTF-8`) for the locale-hardened code now in `origin/master`: `cf_val()` parsing with `export`/CRLF, `slug()` dot-to-dash, Traefik provider detection, `HART_URL`/`SERVICE_URL` trailing-slash and bare scheme handling, hook event lowercasing, `regex_escape()` dot escaping, mixed-case hart domains and wildcard inputs, and generated Traefik `Host()`/`HostRegexp()` rules and Cloudflare DNS targets lowercased
+- If the gate passes, close PR #53 as superseded and the original objective is resolved. If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR.
