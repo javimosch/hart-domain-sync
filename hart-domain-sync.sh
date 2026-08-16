@@ -19,6 +19,7 @@
 set -uo pipefail
 
 trim() { printf '%s' "$1" | LC_ALL=C tr -d '\r' | LC_ALL=C sed 's/^[[:space:]]*//;s/[[:space:]]*$//'; }
+is_nonnegative_int() { (LC_ALL=C; [[ "$1" =~ ^[0-9]+$ ]]); }
 
 # Config file (also loaded by the systemd unit's EnvironmentFile) — sourced here too so the
 # HART_DOMAIN_HOOK path gets the same settings as the timer. Simple KEY=value, operator-owned.
@@ -62,7 +63,7 @@ SERVICE_URL="${SERVICE_URL:-http://127.0.0.1:8799}"   # how Traefik reaches hart
 # not interpreted by the caller's locale.
 HART_URL="$(trim "$HART_URL")"
 SERVICE_URL="$(trim "$SERVICE_URL")"
-url_has_path_after_scheme() { (LC_ALL=C; [[ "$1" =~ ^[[:alpha:]]+://. ]]); }
+url_has_path_after_scheme() { (LC_ALL=C; [[ "$1" =~ ^[[:alpha:]]+://[^/] ]]); }
 while [[ "$HART_URL" == */ ]] && url_has_path_after_scheme "$HART_URL"; do HART_URL="${HART_URL%/}"; done
 while [[ "$SERVICE_URL" == */ ]] && url_has_path_after_scheme "$SERVICE_URL"; do SERVICE_URL="${SERVICE_URL%/}"; done
 ENTRYPOINT="${ENTRYPOINT:-websecure}"           # Traefik TLS entrypoint name
@@ -102,7 +103,7 @@ log() { echo "$(date -u +%H:%M:%S) [hart-domain-sync] $*" >&2; }
 # PROPAGATE_WAIT is passed straight to sleep(); a non-numeric or negative
 # value would abort the script during the ACME wait. Guard it early so the
 # default is a safe, valid number of seconds.
-if [[ ! "$PROPAGATE_WAIT" =~ ^[0-9]+$ ]]; then
+if ! is_nonnegative_int "$PROPAGATE_WAIT"; then
   log "WARN: PROPAGATE_WAIT '$PROPAGATE_WAIT' is not a non-negative integer, using 10"
   PROPAGATE_WAIT=10
 fi
@@ -148,8 +149,8 @@ cf_val() {
   line="$(printf '%s' "$line" | LC_ALL=C tr -d '\r')"
   value="${line#*=}"
   value="$(strip_env_comment "$value")"
-  value="${value#"${value%%[![:space:]]*}"}"
-  value="${value%"${value##*[![:space:]]}"}"
+  # Use the LC_ALL=C trim() helper for locale-independent whitespace handling.
+  value="$(trim "$value")"
   value="${value#\"}"; value="${value%\"}"
   value="${value#\'}"; value="${value%\'}"
   # CRLF-padded env files can leave carriage returns inside quoted values; strip them.
