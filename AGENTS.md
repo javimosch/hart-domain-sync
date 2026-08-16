@@ -363,3 +363,23 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
   - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, and `--remove`
   - regression tests under a non-C locale (e.g. `LC_ALL=fr_FR.UTF-8`) for: `cf_val()` env parsing, `slug()` dot-to-dash lowercasing, Traefik provider auto-detection, `HART_URL`/`SERVICE_URL` trailing-slash stripping, hook event lowercasing, `regex_escape()` dot escaping, mixed-case hart domains, and wildcard matching
 - If the gate passes, close PR #45 and PR #47 as superseded and the original objective is resolved. If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR.
+
+## 2026-08-16 architect plan (am-add074-dkq74vq44uvq-a5dd22b8)
+
+- `gh issue list --state open` returns `[]`; issues #1, #16, and #17 are CLOSED. No open GitHub issues remain to fix.
+- `gh pr list --state open` returns PR #49 (`am/am-add074-dkq6a9qal32t-0633b190`). It is the previous run's branch and contains three real, unmerged `hart-domain-sync.sh` locale/robustness fixes on top of `origin/master` (`a00d9b6`). This branch will land the same three fixes as clean, separate conventional commits and close PR #49 as superseded:
+  1. `fix(sync): preserve authority when stripping HART_URL and SERVICE_URL trailing slashes` — require a non-slash character after `://` in the scheme guard so URLs like `http:///foo/` do not collapse to `http://`.
+  2. `fix(sync): validate PROPAGATE_WAIT under LC_ALL=C` — run the `[0-9]+` regex in an `LC_ALL=C` subshell so non-C locales cannot match non-ASCII digits and break `sleep()`.
+  3. `fix(cf): use LC_ALL=C trim for cf_val whitespace stripping` — replace the `[[:space:]]` parameter-expansion trim with the existing `trim()` helper, which runs `tr` and `sed` under `LC_ALL=C`, for locale-independent whitespace handling.
+- The current branch `am/am-add074-dkq74vq44uvq-a5dd22b8` is at `origin/master` (`a00d9b6`) with a clean worktree. `bash -n hart-domain-sync.sh hart-domain-hook.sh` passes and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` (if installed) already passes.
+- Dev should apply these three changes to `hart-domain-sync.sh` as three small conventional commits; do not bundle the stale `AGENTS.md` plan from PR #49.
+- QA runs the verification gate:
+  - `bash -n hart-domain-sync.sh hart-domain-hook.sh`
+  - `shellcheck hart-domain-sync.sh hart-domain-hook.sh` (if installed)
+  - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, and `--remove`
+  - regression tests for the three new fixes:
+    - `HART_URL` and `SERVICE_URL` with multiple trailing slashes, a bare scheme (`http://`), and an empty authority with a path (`http:///foo/`) — the authority/path must be preserved.
+    - `PROPAGATE_WAIT` with whitespace padding, non-numeric text, a negative value, or a missing value, under a non-C locale (e.g. `LC_ALL=fr_FR.UTF-8`).
+    - `CF_ENV` with CRLF line endings, leading whitespace, `export` prefix, and quoted values; verify `cf_val()` still returns `CF_API_EMAIL`/`CF_API_KEY` correctly.
+  - confirm generated Traefik `Host()` / `HostRegexp()` rules and Cloudflare DNS targets are lowercase
+- If the gate passes, close PR #49 as superseded and the original objective is resolved. If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR.
