@@ -62,7 +62,7 @@ SERVICE_URL="${SERVICE_URL:-http://127.0.0.1:8799}"   # how Traefik reaches hart
 # not interpreted by the caller's locale.
 HART_URL="$(trim "$HART_URL")"
 SERVICE_URL="$(trim "$SERVICE_URL")"
-url_has_path_after_scheme() { (LC_ALL=C; [[ "$1" =~ ^[[:alpha:]]+://. ]]); }
+url_has_path_after_scheme() { (LC_ALL=C; [[ "$1" =~ ^[[:alpha:]]+://[^/] ]]); }
 while [[ "$HART_URL" == */ ]] && url_has_path_after_scheme "$HART_URL"; do HART_URL="${HART_URL%/}"; done
 while [[ "$SERVICE_URL" == */ ]] && url_has_path_after_scheme "$SERVICE_URL"; do SERVICE_URL="${SERVICE_URL%/}"; done
 ENTRYPOINT="${ENTRYPOINT:-websecure}"           # Traefik TLS entrypoint name
