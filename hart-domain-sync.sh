@@ -149,8 +149,8 @@ cf_val() {
   line="$(printf '%s' "$line" | LC_ALL=C tr -d '\r')"
   value="${line#*=}"
   value="$(strip_env_comment "$value")"
-  value="${value#"${value%%[![:space:]]*}"}"
-  value="${value%"${value##*[![:space:]]}"}"
+  # Use the LC_ALL=C trim() helper for locale-independent whitespace handling.
+  value="$(trim "$value")"
   value="${value#\"}"; value="${value%\"}"
   value="${value#\'}"; value="${value%\'}"
   # CRLF-padded env files can leave carriage returns inside quoted values; strip them.
