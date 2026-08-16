@@ -386,6 +386,7 @@ zone_for() { # echo the most specific whitelist zone that is a suffix of $1, els
 
 cf_upsert() { # cf_upsert <fqdn> <zone> <type> <content>
   local d="$1" z="$2" t="$3" c="$4" zid rid body
+  [ -n "$c" ] || { log "DNS: skipping $t $d — content is empty"; return; }
   zid="$(cf GET "/zones?name=$z" | jq -r '.result[0].id // empty')"
   [ -n "$zid" ] || { log "DNS: no zone id for $z"; return; }
   body="$(jq -n --arg type "$t" --arg name "$d" --arg content "$c" \
