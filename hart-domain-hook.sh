@@ -8,6 +8,11 @@ trim() { printf '%s' "$1" | LC_ALL=C tr -d '\r' | LC_ALL=C sed 's/^[[:space:]]*/
 
 SYNC="$(trim "${HART_DOMAIN_SYNC:-/opt/hart/hart-domain-sync.sh}")"
 LOG="$(trim "${HART_DOMAIN_SYNC_LOG:-/opt/hart/domain-sync.log}")"
+# A trailing slash on a configured file path would make the path a directory and
+# break the "is this script executable" check or the log append. Strip them all
+# except a bare root, which would never be a valid script/log path.
+while [[ "$SYNC" == */ && "$SYNC" != "/" ]]; do SYNC="${SYNC%/}"; done
+while [[ "$LOG" == */ && "$LOG" != "/" ]]; do LOG="${LOG%/}"; done
 LOG_DIR="$(dirname "$LOG")"
 if ! mkdir -p "$LOG_DIR" 2>/dev/null || [ ! -w "$LOG_DIR" ]; then
   LOG="/tmp/hart-domain-sync.log"

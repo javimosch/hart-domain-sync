@@ -108,6 +108,16 @@ if ! is_nonnegative_int "$PROPAGATE_WAIT"; then
   PROPAGATE_WAIT=10
 fi
 
+# A bare scheme (e.g. http://) would make the hart/Traefik call invalid.
+if ! url_has_path_after_scheme "$HART_URL"; then
+  log "HART_URL '$HART_URL' is missing a host; aborting"
+  exit 1
+fi
+if ! url_has_path_after_scheme "$SERVICE_URL"; then
+  log "SERVICE_URL '$SERVICE_URL' is missing a host; using HART_URL"
+  SERVICE_URL="$HART_URL"
+fi
+
 # Optional CLI mode: --remove <domain> (called by HART_DOMAIN_HOOK on removal).
 # It runs before any hart/CF I/O and exits after deleting the per-domain config.
 REMOVE_DOMAIN=""
@@ -376,6 +386,7 @@ zone_for() { # echo the most specific whitelist zone that is a suffix of $1, els
 
 cf_upsert() { # cf_upsert <fqdn> <zone> <type> <content>
   local d="$1" z="$2" t="$3" c="$4" zid rid body
+  [ -n "$c" ] || { log "DNS: skipping $t $d — content is empty"; return; }
   zid="$(cf GET "/zones?name=$z" | jq -r '.result[0].id // empty')"
   [ -n "$zid" ] || { log "DNS: no zone id for $z"; return; }
   body="$(jq -n --arg type "$t" --arg name "$d" --arg content "$c" \
