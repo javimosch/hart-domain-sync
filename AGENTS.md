@@ -363,3 +363,18 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
   - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, and `--remove`
   - regression tests under a non-C locale (e.g. `LC_ALL=fr_FR.UTF-8`) for: `cf_val()` env parsing, `slug()` dot-to-dash lowercasing, Traefik provider auto-detection, `HART_URL`/`SERVICE_URL` trailing-slash stripping, hook event lowercasing, `regex_escape()` dot escaping, mixed-case hart domains, and wildcard matching
 - If the gate passes, close PR #45 and PR #47 as superseded and the original objective is resolved. If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR.
+
+## 2026-08-16 architect plan (am-add074-dkq6a9qal32t-0633b190)
+
+- `gh issue list --state open` returns `[]`; issues #1, #16, and #17 are CLOSED. No open GitHub issues remain to fix.
+- `gh pr list --state open` returns PR #45 (`am/am-add074-dkpkgo3rkr73-37b3e04c`) and PR #47 (`am/am-add074-dkpm8zkjqtyk-30073cad`). Both are stale/merge-conflicting and fully superseded by `origin/master` (`a00d9b6` / PR #48):
+  - PR #45 bundles three locale-robustness fixes (lower-case hook event before `case`, `LC_ALL=C` guard for `HART_URL`/`SERVICE_URL` trailing-slash stripping, `LC_ALL=C` for `regex_escape()` dot escaping) plus a stale `AGENTS.md` plan; all three code fixes are already in `origin/master` (commit `63aa5cd` / PR #44 and earlier), and the `fix(sync): run traefik provider grep under LC_ALL=C` follow-up is also in master (commit `a00d9b6` / PR #48).
+  - PR #47 is a docs-only `AGENTS.md` update that attempted to close PR #45/#46; the current branch carries the fresher plan. The previous PR #48 only placed the `close` keyword in its title, so #45/#47 were not actually closed. This run ensures `Closes #45, closes #47` appear in the commit/PR body so the merge will close them.
+- The current branch `am/am-add074-dkq6a9qal32t-0633b190` is at `origin/master` (`a00d9b6`) with a clean worktree. `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass.
+- No dev code change is required to resolve the empty open issue list.
+- QA runs the verification gate:
+  - `bash -n hart-domain-sync.sh hart-domain-hook.sh`
+  - `shellcheck hart-domain-sync.sh hart-domain-hook.sh` (if installed)
+  - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, and `--remove`
+  - regression tests under a non-C locale (e.g. `LC_ALL=fr_FR.UTF-8`) for the locale-hardened code now in `origin/master`: `cf_val()` parses credentials with leading whitespace, `export` prefix, and CRLF; `slug()` produces the same slugs for mixed-case/dotted inputs; Traefik provider auto-detection distinguishes `directory:` vs `filename:` with leading whitespace and comments; `HART_URL`/`SERVICE_URL` with multiple trailing slashes and a bare scheme (`http://`) are handled correctly; mixed-case hook events (`Remove` / `REMOVE`) dispatch to the fast `--remove` path; `regex_escape()` dot-escapes the wildcard domain reliably; generated Traefik `Host()` / `HostRegexp()` rules and Cloudflare DNS targets are lowercase
+- If the gate passes, close PR #45 and PR #47 as superseded and the original objective is resolved. If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR.
