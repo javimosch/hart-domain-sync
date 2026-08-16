@@ -378,3 +378,23 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
   - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, and `--remove`
   - regression tests under a non-C locale (e.g. `LC_ALL=fr_FR.UTF-8`) for the locale-hardened code now in `origin/master`: `cf_val()` parses credentials with leading whitespace, `export` prefix, and CRLF; `slug()` produces the same slugs for mixed-case/dotted inputs; Traefik provider auto-detection distinguishes `directory:` vs `filename:` with leading whitespace and comments; `HART_URL`/`SERVICE_URL` with multiple trailing slashes and a bare scheme (`http://`) are handled correctly; mixed-case hook events (`Remove` / `REMOVE`) dispatch to the fast `--remove` path; `regex_escape()` dot-escapes the wildcard domain reliably; generated Traefik `Host()` / `HostRegexp()` rules and Cloudflare DNS targets are lowercase
 - If the gate passes, close PR #45 and PR #47 as superseded and the original objective is resolved. If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR.
+
+## 2026-08-16 architect plan (am-add074-dkqgu0ldgybe-787cd6ff)
+
+- `gh issue list --state open` returns `[]`; issues #1, #16, and #17 are CLOSED. No open GitHub issues remain to fix.
+- `gh pr list --state open` returns only PR #52 (`am/am-add074-dkqfzdtia5mu-312fb5af`, `docs(agents): add current run architect plan and final status`). The PR bundles a stale `AGENTS.md` plan with three unmerged hart-domain-sync/hook robustness fixes that are not yet in `origin/master` (`6385463`):
+  1. `fix(hook): strip trailing slashes from HART_DOMAIN_SYNC and HART_DOMAIN_SYNC_LOG` — so a path configured with a trailing `/` does not break the executable check or log append.
+  2. `fix(sync): guard HART_URL and SERVICE_URL against a bare scheme` — abort early when `HART_URL` is a bare scheme (e.g. `http://`) and fall back to `HART_URL` when `SERVICE_URL` lacks a host, preventing malformed API/upstream URLs.
+  3. `fix(cf): guard cf_upsert() against empty record content` — skip A/AAAA upserts with empty content so Cloudflare never receives a blank record value.
+- The current branch `am/am-add074-dkqgu0ldgybe-787cd6ff` is at `origin/master` (`6385463`) with a clean worktree. `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` (if installed) both pass on the current branch.
+- Dev should land the three code fixes as clean, separate conventional commits on this branch, leaving the stale `AGENTS.md` plan from PR #52 behind.
+- QA runs the verification gate:
+  - `bash -n hart-domain-sync.sh hart-domain-hook.sh`
+  - `shellcheck hart-domain-sync.sh hart-domain-hook.sh` (if installed)
+  - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, and `--remove`
+  - regression tests for the three new fixes:
+    - `HART_DOMAIN_SYNC` and `HART_DOMAIN_SYNC_LOG` configured with one or more trailing slashes
+    - `HART_URL` set to a bare scheme (`http://`) and `SERVICE_URL` set to a bare scheme or missing host
+    - `cf_upsert()` invoked with an empty `BOX_IP` or `BOX_IP6` (or both)
+  - regression tests under a non-C locale (e.g. `LC_ALL=fr_FR.UTF-8`) for the locale-hardened code now in `origin/master`: `cf_val()` parses credentials with leading whitespace, `export` prefix, and CRLF; `slug()` produces the same slugs for mixed-case/dotted inputs; Traefik provider auto-detection distinguishes `directory:` vs `filename:` with leading whitespace and comments; `HART_URL`/`SERVICE_URL` with multiple trailing slashes and a bare scheme (`http://`) are handled correctly; mixed-case hook events (`Remove` / `REMOVE`) dispatch to the fast `--remove` path; `regex_escape()` dot-escapes the wildcard domain reliably; generated Traefik `Host()` / `HostRegexp()` rules and Cloudflare DNS targets are lowercase
+- If the gate passes, close PR #52 as superseded and the original objective is resolved. If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR.
