@@ -19,6 +19,7 @@
 set -uo pipefail
 
 trim() { printf '%s' "$1" | LC_ALL=C tr -d '\r' | LC_ALL=C sed 's/^[[:space:]]*//;s/[[:space:]]*$//'; }
+is_nonnegative_int() { (LC_ALL=C; [[ "$1" =~ ^[0-9]+$ ]]); }
 
 # Config file (also loaded by the systemd unit's EnvironmentFile) — sourced here too so the
 # HART_DOMAIN_HOOK path gets the same settings as the timer. Simple KEY=value, operator-owned.
@@ -102,7 +103,7 @@ log() { echo "$(date -u +%H:%M:%S) [hart-domain-sync] $*" >&2; }
 # PROPAGATE_WAIT is passed straight to sleep(); a non-numeric or negative
 # value would abort the script during the ACME wait. Guard it early so the
 # default is a safe, valid number of seconds.
-if [[ ! "$PROPAGATE_WAIT" =~ ^[0-9]+$ ]]; then
+if ! is_nonnegative_int "$PROPAGATE_WAIT"; then
   log "WARN: PROPAGATE_WAIT '$PROPAGATE_WAIT' is not a non-negative integer, using 10"
   PROPAGATE_WAIT=10
 fi
