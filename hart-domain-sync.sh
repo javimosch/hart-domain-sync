@@ -108,6 +108,16 @@ if ! is_nonnegative_int "$PROPAGATE_WAIT"; then
   PROPAGATE_WAIT=10
 fi
 
+# A bare scheme (e.g. http://) would make the hart/Traefik call invalid.
+if ! url_has_path_after_scheme "$HART_URL"; then
+  log "HART_URL '$HART_URL' is missing a host; aborting"
+  exit 1
+fi
+if ! url_has_path_after_scheme "$SERVICE_URL"; then
+  log "SERVICE_URL '$SERVICE_URL' is missing a host; using HART_URL"
+  SERVICE_URL="$HART_URL"
+fi
+
 # Optional CLI mode: --remove <domain> (called by HART_DOMAIN_HOOK on removal).
 # It runs before any hart/CF I/O and exits after deleting the per-domain config.
 REMOVE_DOMAIN=""
