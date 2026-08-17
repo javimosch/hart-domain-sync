@@ -25,6 +25,7 @@ is_nonnegative_int() { (LC_ALL=C; [[ "$1" =~ ^[0-9]+$ ]]); }
 # HART_DOMAIN_HOOK path gets the same settings as the timer. Simple KEY=value, operator-owned.
 CONF="${DOMAIN_SYNC_ENV:-/etc/hart/domain-sync.env}"
 CONF="$(trim "$CONF")"
+[ -n "$CONF" ] || CONF="/etc/hart/domain-sync.env"
 # Strip CRLF line endings before sourcing; otherwise bash may parse trailing \r as an
 # extra token and either fail the assignment or bake the carriage return into values.
 if [ -f "$CONF" ]; then
@@ -38,6 +39,7 @@ fi
 HART_URL="${HART_URL:-http://127.0.0.1:8799}"   # hart daemon (default local)
 DEST="${DEST:-/etc/traefik/dynamic.d}"          # Traefik watched directory (directory mode)
 DEST="$(trim "$DEST")"
+[ -n "$DEST" ] || DEST="/etc/traefik/dynamic.d"
 # TRAEFIK_MODE: how this box's Traefik reads dynamic config.
 #   directory -> providers.file.directory : we drop one router file per domain in $DEST
 #   file      -> providers.file.filename  : we MERGE our routers into that single file
@@ -50,8 +52,10 @@ TRAEFIK_MODE="$(trim "$TRAEFIK_MODE")"
 [ -n "$TRAEFIK_MODE" ] || TRAEFIK_MODE=auto
 TRAEFIK_MAIN="${TRAEFIK_MAIN:-/etc/traefik/traefik.yml}"
 TRAEFIK_MAIN="$(trim "$TRAEFIK_MAIN")"
+[ -n "$TRAEFIK_MAIN" ] || TRAEFIK_MAIN="/etc/traefik/traefik.yml"
 SINGLE_FILE="${SINGLE_FILE:-/etc/traefik/dynamic.yml}"   # target in file mode
 SINGLE_FILE="$(trim "$SINGLE_FILE")"
+[ -n "$SINGLE_FILE" ] || SINGLE_FILE="/etc/traefik/dynamic.yml"
 BOX_IP="${BOX_IP:-}"                            # REQUIRED for DNS: this box's public IPv4 (A target)
 BOX_IP6="${BOX_IP6:-}"                          # this box's public IPv6 (AAAA target) — set if your zone has a proxied wildcard
 BOX_IP="$(trim "$BOX_IP")"
@@ -62,7 +66,9 @@ SERVICE_URL="${SERVICE_URL:-http://127.0.0.1:8799}"   # how Traefik reaches hart
 # The scheme guard is evaluated under LC_ALL=C so letter ranges in the regex are
 # not interpreted by the caller's locale.
 HART_URL="$(trim "$HART_URL")"
+[ -n "$HART_URL" ] || HART_URL="http://127.0.0.1:8799"
 SERVICE_URL="$(trim "$SERVICE_URL")"
+[ -n "$SERVICE_URL" ] || SERVICE_URL="http://127.0.0.1:8799"
 url_has_path_after_scheme() { (LC_ALL=C; [[ "$1" =~ ^[[:alpha:]]+://[^/] ]]); }
 while [[ "$HART_URL" == */ ]] && url_has_path_after_scheme "$HART_URL"; do HART_URL="${HART_URL%/}"; done
 while [[ "$SERVICE_URL" == */ ]] && url_has_path_after_scheme "$SERVICE_URL"; do SERVICE_URL="${SERVICE_URL%/}"; done
@@ -74,8 +80,10 @@ CERT_RESOLVER="$(trim "$CERT_RESOLVER")"
 [ -n "$CERT_RESOLVER" ] || CERT_RESOLVER=letsencrypt
 CF_ENV="${CF_ENV:-/etc/traefik/cloudflare.env}" # file holding CF_API_EMAIL + CF_API_KEY
 CF_ENV="$(trim "$CF_ENV")"
+[ -n "$CF_ENV" ] || CF_ENV="/etc/traefik/cloudflare.env"
 MANAGE_DNS="${MANAGE_DNS:-1}"                   # 0 = don't touch Cloudflare DNS at all
 MANAGE_DNS="$(trim "$MANAGE_DNS")"
+[ -n "$MANAGE_DNS" ] || MANAGE_DNS=1
 # Seconds to wait for new DNS records to propagate before restarting Traefik for ACME.
 PROPAGATE_WAIT="${PROPAGATE_WAIT:-10}"
 PROPAGATE_WAIT="$(trim "$PROPAGATE_WAIT")"
