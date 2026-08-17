@@ -7,7 +7,9 @@
 trim() { printf '%s' "$1" | LC_ALL=C tr -d '\r' | LC_ALL=C sed 's/^[[:space:]]*//;s/[[:space:]]*$//'; }
 
 SYNC="$(trim "${HART_DOMAIN_SYNC:-/opt/hart/hart-domain-sync.sh}")"
+[ -n "$SYNC" ] || SYNC="/opt/hart/hart-domain-sync.sh"
 LOG="$(trim "${HART_DOMAIN_SYNC_LOG:-/opt/hart/domain-sync.log}")"
+[ -n "$LOG" ] || LOG="/opt/hart/domain-sync.log"
 # A trailing slash on a configured file path would make the path a directory and
 # break the "is this script executable" check or the log append. Strip them all
 # except a bare root, which would never be a valid script/log path.
