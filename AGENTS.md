@@ -488,3 +488,17 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
     - run `--remove` with `*.Example.COM.` and confirm it removes the same per-domain file / key that the reconcile loop writes for `example.com`.
   - regression tests under a non-C locale (e.g. `LC_ALL=fr_FR.UTF-8`) for the locale-hardened code now in `origin/master`: `cf_val()` parsing with `export`/CRLF, `slug()` dot-to-dash, Traefik provider detection, `HART_URL`/`SERVICE_URL` trailing-slash and bare scheme handling, hook event lowercasing, `regex_escape()` dot escaping, mixed-case hart domains and wildcard inputs, and generated Traefik `Host()` / `HostRegexp()` rules and Cloudflare DNS targets lowercased.
 - If the gate passes, close PR #58 and PR #60 as superseded and the original objective is resolved. If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR.
+
+## 2026-08-17 architect plan (am-add074-dkr8p0gd0iaf-fcfc5bc9)
+
+- `gh issue list --state open` returns `[]`; issues #1, #16, and #17 remain CLOSED. No open GitHub issues remain to fix.
+- `gh pr list --state open` returns only PR #63 (`am/am-add074-dkr7vxnpy91i-e1b89c2c`, `chore(prs): close stale PRs #58/#60/#62 as superseded`). PR #63 is `MERGEABLE`/`CLEAN` and contains only an empty record-keeping commit. The stale PRs it targets (#58, #60, and #62) are all `CONFLICTING` and their bundled robustness fixes are already in `origin/master` (commit `c135600` / PR #61).
+- The current branch `am/am-add074-dkr8p0gd0iaf-fcfc5bc9` is at the same commit as `origin/master` (`c135600`) with a clean worktree. `bash -n hart-domain-sync.sh hart-domain-hook.sh` passes; `shellcheck` is not installed in this environment.
+- No additional dev code change is required to resolve the empty open issue list.
+- Dev should land a single `chore(prs): close stale PRs #58/#60/#62/#63 as superseded` commit on this branch with `Closes #58, closes #60, closes #62, closes #63` in the body and no source-code changes. If the commit/merge keywords do not auto-close the stale PRs, use `gh pr close --comment "superseded by origin/master"` directly.
+- QA runs the verification gate:
+  - `bash -n hart-domain-sync.sh hart-domain-hook.sh`
+  - `shellcheck hart-domain-sync.sh hart-domain-hook.sh` (if installed)
+  - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, `--remove`, leading `*.`, and trailing DNS dots
+  - regression tests under a non-C locale (e.g. `LC_ALL=fr_FR.UTF-8`) for the locale-hardened code now in `origin/master`: `cf_val()` parsing with `export`/CRLF, `slug()` dot-to-dash, Traefik provider detection, `HART_URL`/`SERVICE_URL` trailing-slash and bare scheme handling, hook event lowercasing, `regex_escape()` dot escaping, mixed-case hart domains and wildcard inputs, and generated Traefik `Host()` / `HostRegexp()` rules and Cloudflare DNS targets lowercased
+- If the gate passes and the stale PRs are closed, the original objective is resolved. If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR.
