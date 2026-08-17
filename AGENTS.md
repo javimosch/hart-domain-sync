@@ -470,3 +470,23 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
     - set `HART_DOMAIN_SYNC` to a directory and to a non-existent/non-executable path; set `HART_DOMAIN_SYNC_LOG` to a directory; confirm the hook falls back to `/tmp/hart-domain-sync.log` and exits with a clear error for the bad sync path.
   - regression tests under a non-C locale (e.g. `LC_ALL=fr_FR.UTF-8`) for the locale-hardened code now in `origin/master`: `cf_val()` parsing with `export`/CRLF, `slug()` dot-to-dash, Traefik provider detection, `HART_URL`/`SERVICE_URL` trailing-slash and bare scheme handling, hook event lowercasing, `regex_escape()` dot escaping, mixed-case hart domains and wildcard inputs, and generated Traefik `Host()` / `HostRegexp()` rules and Cloudflare DNS targets lowercased.
 - If the gate passes, close PR #58 as superseded and the objective is resolved. If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR.
+
+## 2026-08-17 architect plan (am-add074-dkr6zrm3a2bs-6d090c10)
+
+- `gh issue list --state open` returns `[]`; issues #1, #16, and #17 remain CLOSED. No open GitHub issues remain to fix.
+- `gh pr list --state open` returns PR #58 (`am/am-add074-dkr3la9pyo58-7f148773`, `fix(sync): accept leading *. wildcard inputs`), PR #60 (`am/am-add074-dkr5aiy8o824-1f55c857`, `fix(hook): guard against directory log path and non-executable sync script`), and PR #61 (`am/am-add074-dkr66o5ln4k6-f8ee6ac1`, `fix(sync): normalize hart-fetched domains before validation`).
+- PR #58 and PR #60 are `mergeable: CONFLICTING` and stale; the hook guard, wildcard input normalization, and trailing-dot stripping they bundle are already in `origin/master` (commit `3c4e39d` / PR #59).
+- PR #61 is `mergeable: MERGEABLE` and contains two real, unmerged robustness fixes not yet in `origin/master`:
+  1. `fix(sync): normalize hart-fetched domains before validation` — in the reconcile loop, strip leading `*.`, trailing DNS dots, and surrounding whitespace from hart-fetched domains before lower-casing and the `^[a-z0-9.-]+$` grep filter.
+  2. `fix(sync): strip leading *. from --remove argument` — strip a leading wildcard from the `--remove` fast path so it matches the slug of normalized hart-fetched domains.
+- The current branch `am-add074-dkr6zrm3a2bs-6d090c10` is based on `origin/master` (`3c4e39d`). `bash -n hart-domain-sync.sh hart-domain-hook.sh` passes. The working tree currently contains an uncommitted `fix(sync): strip leading *. from --remove argument` change that should be committed/verified by dev as the first fix.
+- Dev should land the two unmerged `fix(sync)` commits as clean, separate conventional commits on this branch, without bundling the stale `AGENTS.md` plan from #61. Do not re-apply the hook/wildcard-input fixes already in `origin/master`. The remaining unmerged fix to apply is the hart-fetched domain normalization.
+- QA runs the verification gate:
+  - `bash -n hart-domain-sync.sh hart-domain-hook.sh`
+  - `shellcheck hart-domain-sync.sh hart-domain-hook.sh` (if installed)
+  - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, and `--remove`
+  - regression tests for the new fixes:
+    - hart returns domains like `*.Example.COM.`, `  Foo.Example.COM.  `, or `foo.example.com.`; confirm the reconcile loop strips, lower-cases, and accepts them, and that the generated Traefik `Host()` / `HostRegexp()` rules and Cloudflare DNS targets are lower-case.
+    - run `--remove` with `*.Example.COM.` and `Example.COM.` and confirm it removes the same per-domain file / merged router key as `example.com`.
+  - regression tests under a non-C locale (e.g. `LC_ALL=fr_FR.UTF-8`) for the locale-hardened code in `origin/master`.
+- If the gate passes, close PR #58, PR #60, and PR #61 as superseded by this branch and the objective is resolved. If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR.
