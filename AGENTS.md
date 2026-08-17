@@ -502,3 +502,23 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
   - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, `--remove`, leading `*.`, and trailing DNS dots
   - regression tests under a non-C locale (e.g. `LC_ALL=fr_FR.UTF-8`) for the locale-hardened code now in `origin/master`: `cf_val()` parsing with `export`/CRLF, `slug()` dot-to-dash, Traefik provider detection, `HART_URL`/`SERVICE_URL` trailing-slash and bare scheme handling, hook event lowercasing, `regex_escape()` dot escaping, mixed-case hart domains and wildcard inputs, and generated Traefik `Host()` / `HostRegexp()` rules and Cloudflare DNS targets lowercased
 - If the gate passes and the stale PRs are closed, the original objective is resolved. If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR.
+
+## 2026-08-17 architect plan (am-add074-dkrbdkiypfn5-7ce4f212)
+
+- `gh issue list --state open` returns `[]`; issues #1, #16, and #17 remain CLOSED. No open GitHub issues remain to fix.
+- `gh pr list --state open` returns only PR #66 (`am/am-add074-dkrahdqgh4xy-1e08574c`, `fix(hook): fall back to /tmp when configured log file is not writable`). It bundles three real, unmerged robustness fixes:
+  1. `fix(hook): fall back to /tmp when configured log file is not writable` — after creating the log directory and guarding a directory log path, also redirect `LOG` to `/tmp/hart-domain-sync.log` if the configured file exists but is not writable.
+  2. `fix(sync): disable MANAGE_DNS when Cloudflare credentials or zone list are unavailable` — when `MANAGE_DNS=1`, check `CF_EMAIL` and `CF_KEY` before the CF zones call; if either is missing, log a clear message and set `MANAGE_DNS=0`. Also set `MANAGE_DNS=0` when the CF zones fetch fails, so per-domain DNS is skipped cleanly instead of logging "not under your zones" for every domain.
+  3. `fix(sync): use distinct service key for wildcard router` — the wildcard `HostRegexp` router should reference `hart-${WILD_SLUG}-wildcard` as its service and the `services` section should define that same key, so removing the apex domain (`hart-${WILD_SLUG}`) does not delete the shared service used by the wildcard router.
+- The current branch `am-add074-dkrbdkiypfn5-7ce4f212` is at the same commit as `origin/master` (`f916093`) with a clean worktree. `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass.
+- Dev should land the three fixes as clean, separate conventional commits on this branch; do not bundle the stale `AGENTS.md` plan from PR #66. Include `Closes #66` in the final fix or a follow-up `chore(prs): close stale PR #66 as superseded` commit so the merge closes the superseded PR.
+- QA runs the verification gate:
+  - `bash -n hart-domain-sync.sh hart-domain-hook.sh`
+  - `shellcheck hart-domain-sync.sh hart-domain-hook.sh` (if installed)
+  - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, `--remove`, leading `*.`, and trailing DNS dots
+  - regression tests for the new fixes:
+    - set `HART_DOMAIN_SYNC_LOG` to an existing non-writable file; confirm the hook falls back to `/tmp/hart-domain-sync.log`.
+    - set `MANAGE_DNS=1` with a missing or empty `CF_ENV`, and with valid credentials but a failing CF zones fetch; confirm DNS is disabled and no per-domain "not under your zones" messages are logged.
+    - reconcile with `WILDCARD_DOMAIN` and at least one subdomain, then remove the apex domain with `--remove`; confirm the wildcard router still has its `hart-${WILD_SLUG}-wildcard` service entry.
+  - regression tests under a non-C locale (e.g. `LC_ALL=fr_FR.UTF-8`) for the locale-hardened code now in `origin/master`: `cf_val()` parsing with `export`/CRLF, `slug()` dot-to-dash, Traefik provider detection, `HART_URL`/`SERVICE_URL` trailing-slash and bare scheme handling, hook event lowercasing, `regex_escape()` dot escaping, mixed-case hart domains and wildcard inputs, and generated `Host()`/`HostRegexp()` rules and Cloudflare DNS targets lowercased.
+- If the gate passes and PR #66 is closed as superseded, the original objective is resolved. If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR.
