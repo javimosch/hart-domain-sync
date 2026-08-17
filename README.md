@@ -68,7 +68,8 @@ that, its `setup-traefik` regenerated the whole file and would erase these route
 - **`hart-domain-hook.sh`** — set as hart's `HART_DOMAIN_HOOK`; fires a background reconcile the
   instant a domain is mapped/unmapped (returns immediately, doesn't block the HTTP response).
   Set `HART_DOMAIN_SYNC` and `HART_DOMAIN_SYNC_LOG` to override the default hook script and log path;
-  if the configured log directory is not writable, the hook falls back to `/tmp/hart-domain-sync.log`.
+  empty or whitespace-only values fall back to the defaults. If the configured log directory is not
+  writable, the hook falls back to `/tmp/hart-domain-sync.log`.
 - **`hart-domain-sync.timer`** — every 5 min; self-heals missed hooks, manual DB edits, restarts.
 
 ## Config
@@ -95,6 +96,9 @@ least set `BOX_IP`.
 | `WILDCARD_INSTANCE_DOMAIN` | *(empty)* | e.g. `hart.intrane.fr` — subdomains are covered by an externally managed wildcard; skip per-domain files and DNS |
 | `HART_ADMIN_TOKEN` / `HART_TOKEN` | *(empty)* | Authorization header for `GET /v1/domain` on locked-down hart instances |
 | `PROPAGATE_WAIT` | `10` | seconds to wait for DNS before the new-domain Traefik restart |
+
+Any variable with a default falls back to that default when the env value is empty or
+whitespace-only after trimming (including a path padded with trailing spaces or a CRLF).
 
 ## Prerequisites
 
