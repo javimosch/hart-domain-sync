@@ -19,11 +19,16 @@ LOG_DIR="$(dirname "$LOG")"
 if ! mkdir -p "$LOG_DIR" 2>/dev/null || [ ! -w "$LOG_DIR" ]; then
   LOG="/tmp/hart-domain-sync.log"
 fi
+# A configured log path that points to a directory would fail the append below.
+[ -d "$LOG" ] && LOG="/tmp/hart-domain-sync.log"
 
 # Detach from hart's request stdout/stderr once the log path is final.
 exec >/dev/null 2>&1
 
-[ -x "$SYNC" ] || { printf '%s\n' "HART_DOMAIN_SYNC not found or not executable: $SYNC" >>"$LOG"; exit 1; }
+if [ -d "$SYNC" ] || [ ! -x "$SYNC" ]; then
+  printf '%s\n' "HART_DOMAIN_SYNC is not an executable file: $SYNC" >>"$LOG"
+  exit 1
+fi
 EVENT="$(trim "${1:-}" | LC_ALL=C tr '[:upper:]' '[:lower:]')"
 case "$EVENT" in
   remove)
