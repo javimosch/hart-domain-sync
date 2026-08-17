@@ -378,13 +378,19 @@ mkdir -p "$DEST" 2>/dev/null || { log "cannot create $DEST"; exit 1; }
 
 # --- 2. CF zones = the DNS whitelist (best-effort; DNS skipped if this fails) ---
 ZONES=()
-if [ "$MANAGE_DNS" = "1" ] && [ -n "$CF_EMAIL" ] && [ -n "$CF_KEY" ]; then
-  ZRESP="$(cf GET '/zones?per_page=50&status=active')"
-  if echo "$ZRESP" | jq -e '.success==true' >/dev/null 2>&1; then
-    mapfile -t ZONES < <(echo "$ZRESP" | jq -r '.result[].name' | LC_ALL=C tr '[:upper:]' '[:lower:]')
-    log "CF zones (whitelist): ${#ZONES[@]}"
+if [ "$MANAGE_DNS" = "1" ]; then
+  if [ -z "$CF_EMAIL" ] || [ -z "$CF_KEY" ]; then
+    log "CF credentials not found in $CF_ENV — DNS automation disabled"
+    MANAGE_DNS=0
   else
-    log "CF zones fetch failed — DNS automation skipped this run"
+    ZRESP="$(cf GET '/zones?per_page=50&status=active')"
+    if echo "$ZRESP" | jq -e '.success==true' >/dev/null 2>&1; then
+      mapfile -t ZONES < <(echo "$ZRESP" | jq -r '.result[].name' | LC_ALL=C tr '[:upper:]' '[:lower:]')
+      log "CF zones (whitelist): ${#ZONES[@]}"
+    else
+      log "CF zones fetch failed — DNS automation skipped this run"
+      MANAGE_DNS=0
+    fi
   fi
 fi
 
