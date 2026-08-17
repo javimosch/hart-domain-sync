@@ -470,3 +470,21 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
     - set `HART_DOMAIN_SYNC` to a directory and to a non-existent/non-executable path; set `HART_DOMAIN_SYNC_LOG` to a directory; confirm the hook falls back to `/tmp/hart-domain-sync.log` and exits with a clear error for the bad sync path.
   - regression tests under a non-C locale (e.g. `LC_ALL=fr_FR.UTF-8`) for the locale-hardened code now in `origin/master`: `cf_val()` parsing with `export`/CRLF, `slug()` dot-to-dash, Traefik provider detection, `HART_URL`/`SERVICE_URL` trailing-slash and bare scheme handling, hook event lowercasing, `regex_escape()` dot escaping, mixed-case hart domains and wildcard inputs, and generated Traefik `Host()` / `HostRegexp()` rules and Cloudflare DNS targets lowercased.
 - If the gate passes, close PR #58 as superseded and the objective is resolved. If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR.
+
+## 2026-08-17 architect plan (am-add074-dkr66o5ln4k6-f8ee6ac1)
+
+- `gh issue list --state open` returns `[]`; issues #1, #16, and #17 remain CLOSED. No open GitHub issues remain to fix.
+- `gh pr list --state open` returns PR #58 (`am/am-add074-dkr3la9pyo58-7f148773`, `fix(sync): accept leading *. wildcard inputs`) and PR #60 (`am/am-add074-dkr5aiy8o824-1f55c857`, `fix(hook): guard against directory log path and non-executable sync script`). Both are merge-conflicting and stale. The hook guard, wildcard input normalization, and trailing-dot stripping for `WILDCARD_DOMAIN` / `WILDCARD_INSTANCE_DOMAIN` / `--remove` are already in `origin/master` (commit `3c4e39d` / PR #59). The remaining unmerged robustness fix from #60 is hart-fetched domain normalization.
+- The current branch `am/am-add074-dkr66o5ln4k6-f8ee6ac1` is at `origin/master` (`3c4e39d`) with a clean worktree. `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass.
+- Dev has landed two clean, separate conventional commits on this branch:
+  1. `fix(sync): normalize hart-fetched domains before validation` — strip leading `*.`, trailing DNS dots, and surrounding whitespace from hart-fetched domains before lower-casing and the `[a-z0-9.-]+` grep filter.
+  2. `fix(sync): strip leading *. from --remove argument` — apply the same leading-wildcard stripping to the `--remove` fast path so `*.Example.COM.` removes the same per-domain file as `example.com`.
+- QA runs the verification gate:
+  - `bash -n hart-domain-sync.sh hart-domain-hook.sh`
+  - `shellcheck hart-domain-sync.sh hart-domain-hook.sh` (if installed)
+  - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, and `--remove`
+  - regression tests for the new fixes:
+    - hart returns domains with leading `*.`, trailing dots, or surrounding spaces; confirm the reconcile loop treats them like the lower-cased, stripped equivalent.
+    - run `--remove` with `*.Example.COM.` and confirm it removes the same per-domain file / key that the reconcile loop writes for `example.com`.
+  - regression tests under a non-C locale (e.g. `LC_ALL=fr_FR.UTF-8`) for the locale-hardened code now in `origin/master`: `cf_val()` parsing with `export`/CRLF, `slug()` dot-to-dash, Traefik provider detection, `HART_URL`/`SERVICE_URL` trailing-slash and bare scheme handling, hook event lowercasing, `regex_escape()` dot escaping, mixed-case hart domains and wildcard inputs, and generated Traefik `Host()` / `HostRegexp()` rules and Cloudflare DNS targets lowercased.
+- If the gate passes, close PR #58 and PR #60 as superseded and the original objective is resolved. If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR.
