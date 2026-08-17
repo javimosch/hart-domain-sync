@@ -99,6 +99,13 @@ AUTH_TOKEN="$(trim "$AUTH_TOKEN")"
 # mixed-case hart domains still match the configured wildcard.
 WILDCARD_DOMAIN="$(trim "$WILDCARD_DOMAIN" | LC_ALL=C tr '[:upper:]' '[:lower:]')"
 WILDCARD_INSTANCE_DOMAIN="$(trim "$WILDCARD_INSTANCE_DOMAIN" | LC_ALL=C tr '[:upper:]' '[:lower:]')"
+# Accept either "example.com" or "*.example.com" for wildcard inputs; the
+# wildcard itself is always expressed as "*.example.com" when needed.
+WILDCARD_DOMAIN="${WILDCARD_DOMAIN#"*."}"
+WILDCARD_INSTANCE_DOMAIN="${WILDCARD_INSTANCE_DOMAIN#"*."}"
+# Remove a trailing DNS dot (example.com.) so host matching works as expected.
+while [[ "$WILDCARD_DOMAIN" == *. ]]; do WILDCARD_DOMAIN="${WILDCARD_DOMAIN%.}"; done
+while [[ "$WILDCARD_INSTANCE_DOMAIN" == *. ]]; do WILDCARD_INSTANCE_DOMAIN="${WILDCARD_INSTANCE_DOMAIN%.}"; done
 
 if [ "$MANAGE_DNS" = "1" ] && [ -z "$BOX_IP" ]; then
   log_early() { echo "$(date -u +%H:%M:%S) [hart-domain-sync] $*" >&2; }
@@ -135,6 +142,9 @@ if [ "${1:-}" = "--remove" ]; then
   # DNS/HTTP hostnames are case-insensitive; keep the remove path consistent
   # with the lower-cased per-domain files generated in the reconcile loop.
   REMOVE_DOMAIN="$(trim "$REMOVE_DOMAIN" | LC_ALL=C tr '[:upper:]' '[:lower:]')"
+  # A trailing DNS dot would produce a slug that does not match the per-domain
+  # file written by the reconcile loop, so remove it before the fast remove.
+  while [[ "$REMOVE_DOMAIN" == *. ]]; do REMOVE_DOMAIN="${REMOVE_DOMAIN%.}"; done
 fi
 
 # CF creds: extract (don't source — env files can carry chars bash chokes on).
