@@ -488,3 +488,16 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
     - run `--remove` with `*.Example.COM.` and confirm it removes the same per-domain file / key that the reconcile loop writes for `example.com`.
   - regression tests under a non-C locale (e.g. `LC_ALL=fr_FR.UTF-8`) for the locale-hardened code now in `origin/master`: `cf_val()` parsing with `export`/CRLF, `slug()` dot-to-dash, Traefik provider detection, `HART_URL`/`SERVICE_URL` trailing-slash and bare scheme handling, hook event lowercasing, `regex_escape()` dot escaping, mixed-case hart domains and wildcard inputs, and generated Traefik `Host()` / `HostRegexp()` rules and Cloudflare DNS targets lowercased.
 - If the gate passes, close PR #58 and PR #60 as superseded and the original objective is resolved. If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR.
+
+## 2026-08-17 architect plan and final status (am-add074-dkr9l8baekd5-c8f0b904)
+
+- `gh issue list --state open` returns `[]`; issues #1, #16, and #17 remain CLOSED. No open GitHub issues remain to fix.
+- `gh pr list --state open` returns `[]`; all stale PRs (#58, #60, #62, #63, and the record-keeping PR #64) are now CLOSED or MERGED. No open pull requests remain.
+- The current branch `am/am-add074-dkr9l8baekd5-c8f0b904` is at the same commit as `origin/master` (`c135600` / PR #61), with a clean worktree. `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass.
+- No dev code change is required to resolve the ASSIGNED OBJECTIVE.
+- QA runs the verification gate as a final regression check:
+  - `bash -n hart-domain-sync.sh hart-domain-hook.sh`
+  - `shellcheck hart-domain-sync.sh hart-domain-hook.sh` (if installed)
+  - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, leading `*.` / trailing-dot inputs, and `--remove`
+  - regression tests under a non-C locale (e.g. `LC_ALL=fr_FR.UTF-8`) for the locale-hardened code in `origin/master`
+- If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the objective is resolved.
