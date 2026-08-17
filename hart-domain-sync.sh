@@ -142,8 +142,10 @@ if [ "${1:-}" = "--remove" ]; then
   # DNS/HTTP hostnames are case-insensitive; keep the remove path consistent
   # with the lower-cased per-domain files generated in the reconcile loop.
   REMOVE_DOMAIN="$(trim "$REMOVE_DOMAIN" | LC_ALL=C tr '[:upper:]' '[:lower:]')"
-  # A trailing DNS dot would produce a slug that does not match the per-domain
-  # file written by the reconcile loop, so remove it before the fast remove.
+  # A leading wildcard (*.example.com) or a trailing DNS dot would produce a
+  # slug that does not match the per-domain file, so strip both before the
+  # fast remove.
+  REMOVE_DOMAIN="${REMOVE_DOMAIN#"*."}"
   while [[ "$REMOVE_DOMAIN" == *. ]]; do REMOVE_DOMAIN="${REMOVE_DOMAIN%.}"; done
 fi
 
