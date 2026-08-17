@@ -309,7 +309,7 @@ RESP="$(curl -s --max-time 10 "${CURL_AUTH[@]}" "$HART_URL/v1/domain")" \
   || { log "cannot reach hart at $HART_URL — abort (no prune)"; exit 1; }
 echo "$RESP" | jq -e '.ok==true' >/dev/null 2>&1 \
   || { log "unexpected hart response — abort (no prune): $(printf '%.120s' "$RESP")"; exit 1; }
-mapfile -t DOMAINS < <(echo "$RESP" | jq -r '.domains[]?.domain' | LC_ALL=C tr '[:upper:]' '[:lower:]' | LC_ALL=C grep -E '^[a-z0-9.-]+$' || true)
+mapfile -t DOMAINS < <(echo "$RESP" | jq -r '.domains[]?.domain' | LC_ALL=C tr '[:upper:]' '[:lower:]' | LC_ALL=C sed 's/^[[:space:]]*//;s/[[:space:]]*$//;s/^\*\.//;s/\.*$//' | LC_ALL=C grep -E '^[a-z0-9.-]+$' || true)
 
 # In file mode the per-domain files are only an intermediate representation: generate
 # them into a scratch dir with the existing logic, then merge into $SINGLE_FILE. That
