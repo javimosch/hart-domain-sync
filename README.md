@@ -96,6 +96,9 @@ least set `BOX_IP`.
 | `HART_ADMIN_TOKEN` / `HART_TOKEN` | *(empty)* | Authorization header for `GET /v1/domain` on locked-down hart instances |
 | `PROPAGATE_WAIT` | `10` | seconds to wait for DNS before the new-domain Traefik restart |
 
+Any variable with a default falls back to that default when the env value is empty or
+whitespace-only after trimming (including a path padded with trailing spaces or a CRLF).
+
 ## Prerequisites
 
 - **A Traefik file provider of either shape** — directory or single file. Both are supported and the
