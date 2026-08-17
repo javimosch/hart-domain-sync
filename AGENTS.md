@@ -450,3 +450,23 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
 - `gh pr list --state open` returns only PR #56 (`am/am-add074-dkr1sxrvvg9n-eba4759b`, `fix(hook): default SYNC and LOG paths when env values are whitespace-only`). It is `mergeStateStatus: DIRTY` / `mergeable: CONFLICTING` and fully superseded by `origin/master` (`e319006` / PR #55); all three fallback fixes it bundles are already in master.
 - The dev branch is at the same commit as `origin/master` (`e319006`) with a clean worktree. `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass. No dev code change is required.
 - PR #56 is closed as superseded and the original objective is resolved.
+
+## 2026-08-17 architect plan (am-add074-dkr4ecmzpflq-01d63eac)
+
+- `gh issue list --state open` returns `[]`; issues #1, #16, and #17 remain CLOSED. No open GitHub issues remain to fix.
+- `gh pr list --state open` returns only PR #58 (`am/am-add074-dkr3la9pyo58-7f148773`, `fix(sync): accept leading *. wildcard inputs`). It is `mergeable: CONFLICTING` and bundles two real, unmerged robustness fixes:
+  1. Accept a leading `*.` and strip trailing DNS dots from `WILDCARD_DOMAIN` and `WILDCARD_INSTANCE_DOMAIN`.
+  2. Guard `HART_DOMAIN_SYNC` against a directory or non-executable path, and fall back to `/tmp/hart-domain-sync.log` when `HART_DOMAIN_SYNC_LOG` points to a directory.
+- The current branch `am-add074-dkr4ecmzpflq-01d63eac` is 2 commits ahead of `origin/master` (`574dc9a`) with a clean worktree. `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass.
+- Dev has already split the two fixes into clean, separate conventional commits:
+  - `fix(hook): guard against directory log path and non-executable sync script`
+  - `fix(sync): accept leading *. and trailing-dot wildcard inputs`
+- QA runs the verification gate:
+  - `bash -n hart-domain-sync.sh hart-domain-hook.sh`
+  - `shellcheck hart-domain-sync.sh hart-domain-hook.sh` (if installed)
+  - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, and `--remove`
+  - regression tests for the new fixes:
+    - set `WILDCARD_DOMAIN` and `WILDCARD_INSTANCE_DOMAIN` to `*.Example.COM.`, `example.com.`, `*.example.com`, and bare `example.com`; confirm generated `Host()` / `HostRegexp()` rules and Cloudflare DNS targets use the stripped, lower-case form.
+    - set `HART_DOMAIN_SYNC` to a directory and to a non-existent/non-executable path; set `HART_DOMAIN_SYNC_LOG` to a directory; confirm the hook falls back to `/tmp/hart-domain-sync.log` and exits with a clear error for the bad sync path.
+  - regression tests under a non-C locale (e.g. `LC_ALL=fr_FR.UTF-8`) for the locale-hardened code now in `origin/master`: `cf_val()` parsing with `export`/CRLF, `slug()` dot-to-dash, Traefik provider detection, `HART_URL`/`SERVICE_URL` trailing-slash and bare scheme handling, hook event lowercasing, `regex_escape()` dot escaping, mixed-case hart domains and wildcard inputs, and generated Traefik `Host()` / `HostRegexp()` rules and Cloudflare DNS targets lowercased.
+- If the gate passes, close PR #58 as superseded and the objective is resolved. If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR.
