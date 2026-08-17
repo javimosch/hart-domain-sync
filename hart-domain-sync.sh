@@ -103,6 +103,9 @@ WILDCARD_INSTANCE_DOMAIN="$(trim "$WILDCARD_INSTANCE_DOMAIN" | LC_ALL=C tr '[:up
 # wildcard itself is always expressed as "*.example.com" when needed.
 WILDCARD_DOMAIN="${WILDCARD_DOMAIN#"*."}"
 WILDCARD_INSTANCE_DOMAIN="${WILDCARD_INSTANCE_DOMAIN#"*."}"
+# Remove a trailing DNS dot (example.com.) so host matching works as expected.
+while [[ "$WILDCARD_DOMAIN" == *. ]]; do WILDCARD_DOMAIN="${WILDCARD_DOMAIN%.}"; done
+while [[ "$WILDCARD_INSTANCE_DOMAIN" == *. ]]; do WILDCARD_INSTANCE_DOMAIN="${WILDCARD_INSTANCE_DOMAIN%.}"; done
 
 if [ "$MANAGE_DNS" = "1" ] && [ -z "$BOX_IP" ]; then
   log_early() { echo "$(date -u +%H:%M:%S) [hart-domain-sync] $*" >&2; }
