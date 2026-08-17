@@ -66,7 +66,9 @@ SERVICE_URL="${SERVICE_URL:-http://127.0.0.1:8799}"   # how Traefik reaches hart
 # The scheme guard is evaluated under LC_ALL=C so letter ranges in the regex are
 # not interpreted by the caller's locale.
 HART_URL="$(trim "$HART_URL")"
+[ -n "$HART_URL" ] || HART_URL="http://127.0.0.1:8799"
 SERVICE_URL="$(trim "$SERVICE_URL")"
+[ -n "$SERVICE_URL" ] || SERVICE_URL="http://127.0.0.1:8799"
 url_has_path_after_scheme() { (LC_ALL=C; [[ "$1" =~ ^[[:alpha:]]+://[^/] ]]); }
 while [[ "$HART_URL" == */ ]] && url_has_path_after_scheme "$HART_URL"; do HART_URL="${HART_URL%/}"; done
 while [[ "$SERVICE_URL" == */ ]] && url_has_path_after_scheme "$SERVICE_URL"; do SERVICE_URL="${SERVICE_URL%/}"; done
@@ -81,6 +83,7 @@ CF_ENV="$(trim "$CF_ENV")"
 [ -n "$CF_ENV" ] || CF_ENV="/etc/traefik/cloudflare.env"
 MANAGE_DNS="${MANAGE_DNS:-1}"                   # 0 = don't touch Cloudflare DNS at all
 MANAGE_DNS="$(trim "$MANAGE_DNS")"
+[ -n "$MANAGE_DNS" ] || MANAGE_DNS=1
 # Seconds to wait for new DNS records to propagate before restarting Traefik for ACME.
 PROPAGATE_WAIT="${PROPAGATE_WAIT:-10}"
 PROPAGATE_WAIT="$(trim "$PROPAGATE_WAIT")"
