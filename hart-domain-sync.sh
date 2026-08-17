@@ -511,11 +511,11 @@ http:
     hart-${WILD_SLUG}-wildcard:
       rule: "HostRegexp(\`^.+\\\\.$REGEX$\`)"
       entryPoints: [$ENTRYPOINT]
-      service: hart-$WILD_SLUG
+      service: hart-${WILD_SLUG}-wildcard
       tls:
         certResolver: $CERT_RESOLVER
   services:
-    hart-$WILD_SLUG:
+    hart-${WILD_SLUG}-wildcard:
       loadBalancer:
         servers:
           - url: "$SERVICE_URL"
