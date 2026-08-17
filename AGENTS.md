@@ -426,3 +426,18 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
   - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, and `--remove`
   - regression tests under a non-C locale (e.g. `LC_ALL=fr_FR.UTF-8`) for the locale-hardened code now in `origin/master`: `cf_val()` parsing with `export`/CRLF, `slug()` dot-to-dash, Traefik provider detection, `HART_URL`/`SERVICE_URL` trailing-slash and bare scheme handling, hook event lowercasing, `regex_escape()` dot escaping, mixed-case hart domains and wildcard inputs, and generated Traefik `Host()`/`HostRegexp()` rules and Cloudflare DNS targets lowercased
 - If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the objective is resolved and no further action is needed.
+
+## 2026-08-17 architect plan (am-add074-dkr3la9pyo58-7f148773)
+
+- `gh issue list --state open` returns `[]`; issues #1, #16, and #17 remain CLOSED. No open GitHub issues remain to fix.
+- `gh pr list --state open` returns only PR #57 (`am/am-add074-dkr2p3j6ugjs-82620916`, `docs(agents): add current run architect plan and close stale PR #56`). It is a stale docs PR for the already-closed PR #56; its README note about whitespace-only env fallback is valid but its AGENTS.md plan is now out of date.
+- The current branch `am/am-add074-dkr3la9pyo58-7f148773` is at the same commit as `origin/master` (`e319006`) with a clean worktree. `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass.
+- No dev code change is required to resolve the empty open issue list.
+- Dev may land the README note from PR #57 as a separate `docs(readme): note env fallback for whitespace-only values` commit if desired, then close PR #57 as superseded.
+- QA runs the verification gate:
+  - `bash -n hart-domain-sync.sh hart-domain-hook.sh`
+  - `shellcheck hart-domain-sync.sh hart-domain-hook.sh` (if installed)
+  - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, and `--remove`
+  - regression tests for the fallback fixes now in `origin/master`: set whitespace-only or CRLF-padded env values for `HART_DOMAIN_SYNC`, `HART_DOMAIN_SYNC_LOG`, `CONF`, `DEST`, `TRAEFIK_MAIN`, `SINGLE_FILE`, `CF_ENV`, `HART_URL`, `SERVICE_URL`, and `MANAGE_DNS`; confirm the documented defaults are used and the URL scheme guard still rejects a bare scheme.
+  - regression tests under a non-C locale (e.g. `LC_ALL=fr_FR.UTF-8`) for the locale-hardened code now in `origin/master`: `cf_val()` parsing with `export`/CRLF, `slug()` dot-to-dash, Traefik provider detection, `HART_URL`/`SERVICE_URL` trailing-slash and bare scheme handling, hook event lowercasing, `regex_escape()` dot escaping, mixed-case hart domains and wildcard inputs, and generated Traefik `Host()`/`HostRegexp()` rules and Cloudflare DNS targets lowercased
+- If the gate passes and PR #57 is closed, the original objective is resolved. If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR.
