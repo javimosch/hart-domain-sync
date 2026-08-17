@@ -21,6 +21,8 @@ if ! mkdir -p "$LOG_DIR" 2>/dev/null || [ ! -w "$LOG_DIR" ]; then
 fi
 # A configured log path that points to a directory would fail the append below.
 [ -d "$LOG" ] && LOG="/tmp/hart-domain-sync.log"
+# An existing log file that is not writable would also fail the append.
+[ -e "$LOG" ] && [ ! -w "$LOG" ] && LOG="/tmp/hart-domain-sync.log"
 
 # Detach from hart's request stdout/stderr once the log path is final.
 exec >/dev/null 2>&1
