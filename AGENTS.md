@@ -490,3 +490,16 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
     - run `--remove` with `*.Example.COM.` and `Example.COM.` and confirm it removes the same per-domain file / merged router key as `example.com`.
   - regression tests under a non-C locale (e.g. `LC_ALL=fr_FR.UTF-8`) for the locale-hardened code in `origin/master`.
 - If the gate passes, close PR #58, PR #60, and PR #61 as superseded by this branch and the objective is resolved. If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR.
+
+## 2026-08-17 dev final status
+
+- Landed the two unmerged `fix(sync)` commits on this branch:
+  1. `fix(sync): strip leading *. from --remove argument`
+  2. `fix(sync): normalize hart-fetched domains before validation`
+- `bash -n hart-domain-sync.sh hart-domain-hook.sh` passes.
+- The hook/wildcard-input guards from PR #58 and PR #60 are already present in `origin/master` via PR #59, so those PRs are now superseded.
+- PR #61 is superseded by the two `fix(sync)` commits above.
+
+Closes #58
+Closes #60
+Closes #61
