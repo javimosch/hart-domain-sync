@@ -70,6 +70,14 @@ HART_URL="$(trim "$HART_URL")"
 SERVICE_URL="$(trim "$SERVICE_URL")"
 [ -n "$SERVICE_URL" ] || SERVICE_URL="http://127.0.0.1:8799"
 url_has_path_after_scheme() { (LC_ALL=C; [[ "$1" =~ ^[[:alpha:]][-+[:alnum:].]*://[^/] ]]); }
+# Reduce a URL to just scheme://authority. Paths and queries are not valid for
+# hart's API or for the Traefik service URL and would produce calls like
+# /api/v1/domain or proxy every host to /some/path.
+url_base() { local LC_ALL=C; [[ "$1" =~ ^([[:alpha:]][-+[:alnum:].]*://[^/]+) ]] || return 1; printf '%s' "${BASH_REMATCH[1]}"; }
+if HART_URL_BASE="$(url_base "$HART_URL")"; then HART_URL="$HART_URL_BASE"; fi
+if SERVICE_URL_BASE="$(url_base "$SERVICE_URL")"; then SERVICE_URL="$SERVICE_URL_BASE"; fi
+# After url_base(), trailing slashes are already gone, but loop once more to
+# catch any trailing slash edge case the regex did not strip.
 while [[ "$HART_URL" == */ ]] && url_has_path_after_scheme "$HART_URL"; do HART_URL="${HART_URL%/}"; done
 while [[ "$SERVICE_URL" == */ ]] && url_has_path_after_scheme "$SERVICE_URL"; do SERVICE_URL="${SERVICE_URL%/}"; done
 ENTRYPOINT="${ENTRYPOINT:-websecure}"           # Traefik TLS entrypoint name
