@@ -39,8 +39,8 @@ case "$EVENT" in
       printf '%s\n' "hart-domain-hook: missing domain for remove" >>"$LOG"
       exit 1
     fi
-    nohup "$SYNC" --remove "$DOMAIN" >>"$LOG" 2>&1 &
+    nohup "$SYNC" --remove "$DOMAIN" </dev/null >>"$LOG" 2>&1 &
     ;;
-  *)      nohup "$SYNC" >>"$LOG" 2>&1 & ;;
+  *)      nohup "$SYNC" </dev/null >>"$LOG" 2>&1 & ;;
 esac
 exit 0

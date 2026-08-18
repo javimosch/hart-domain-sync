@@ -616,3 +616,17 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
   - regression tests under a non-C locale (e.g. `LC_ALL=fr_FR.UTF-8`) for the locale-hardened code
 - If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the original objective is resolved, PR #79 is closed as superseded, and no further action is needed.
 
+## 2026-08-18 final status (am-add074-dks50t2rqvx0-064a4832)
+
+- `gh issue list --state open` returns `[]`; issues #1, #16, #17, #68, #69, and #70 remain CLOSED. No open GitHub issues remain to fix.
+- `gh pr list --state open` returns only PR #81 (`am/am-add074-dks498zt3izv-16740cf1`, `docs(agents): add current run status and close stale PRs #79/#80 as superseded`). It is a stale, merge-conflicting docs-only PR from the previous run; the PRs it tries to close (#79 and #80) are already closed/merged on `origin/master` (commit `92132f3` from PR #80), so PR #81 is no longer needed.
+- The current branch `am-add074-dks50t2rqvx0-064a4832` is at the same commit as `origin/master` (`92132f3`) with a clean worktree. `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass.
+- No dev code change is required to resolve the empty open issue list. This run lands a `docs(agents)` update to `AGENTS.md` with `Closes #81` in the commit body so the stale PR is closed on merge.
+- QA runs the final verification gate:
+  - `bash -n hart-domain-sync.sh hart-domain-hook.sh`
+  - `shellcheck hart-domain-sync.sh hart-domain-hook.sh` (if installed)
+  - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, `--remove`, leading `*.`, and trailing DNS dots
+  - regression for the latest merged fixes in `origin/master`: RFC 3986 URL schemes (`h2c://`, `coap+tcp://`, uppercase `HTTP://`), quote-aware YAML inline comment stripping, `rule_claimed()` backtick matching, hook log fallback to `/tmp`, hart-fetched domain normalization, and locale-hardened `cf_val()`/`slug()`/`regex_escape()`/provider detection
+  - regression tests under a non-C locale (`LC_ALL=fr_FR.UTF-8`) for the locale-hardened code
+- If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the original objective is resolved, PR #81 is closed as superseded, and no further action is needed.
+
