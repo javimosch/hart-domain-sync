@@ -580,3 +580,21 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
     - `rule_claimed()` matches the exact ``Host(\`domain\`)`` form.
   - regression tests under a non-C locale (e.g. `LC_ALL=fr_FR.UTF-8`) for the locale-hardened code now in `origin/master`: `cf_val()` parsing with `export`/CRLF, `slug()` dot-to-dash, Traefik provider detection, `HART_URL`/`SERVICE_URL` trailing-slash and bare scheme handling, hook event lowercasing, `regex_escape()` dot escaping, mixed-case hart domains and wildcard inputs, and generated Traefik `Host()` / `HostRegexp()` rules and Cloudflare DNS targets lowercased
 - If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the original objective is resolved and no further action is needed.
+
+## 2026-08-18 architect plan and final status (am-add074-dks2lj19d4a4-cfcdf6ac)
+
+- `gh issue list --state open` returns `[]`; issues #68, #69, and #70 remain CLOSED. No open GitHub issues remain to fix.
+- `gh pr list --state open` returns PR #77 (`am/am-add074-dks0w9ud09zr-05e31a13`, `docs(agents): add current run architect plan and close stale PR #76 as superseded`) and PR #78 (`am/am-add074-dks1sfdxhsgq-39d04fa5`, `docs(agents): add current run architect plan and close stale PR #77 as superseded`). Both are stale docs-only plan PRs from earlier runs and are fully superseded by the current branch `am/am-add074-dks2lj19d4a4-cfcdf6ac`.
+- The current branch is at the same commit as `origin/master` (`713e14e`) with a clean worktree. `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` pass in this environment.
+- No additional dev code change is required to resolve the empty open issue list.
+- QA runs the final verification gate:
+  - `bash -n hart-domain-sync.sh hart-domain-hook.sh`
+  - `shellcheck hart-domain-sync.sh hart-domain-hook.sh` (if installed)
+  - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, `--remove`, leading `*.`, and trailing DNS dots
+  - regression for the latest merged fixes in `origin/master`:
+    - RFC 3986 URL schemes (`h2c://`, `coap+tcp://`, uppercase `HTTP://`) are accepted and trailing slashes are stripped; bare scheme `http://` is still rejected.
+    - Directory- and file-mode rule scanners strip unquoted inline YAML comments (`rule: "Host(\`foo.com\`)" # my router`) but do not strip `#` inside quotes.
+    - `rule_claimed()` matches the exact ``Host(\`domain\`)`` form.
+    - `cf_val()` parsing with `export`/CRLF, `slug()` dot-to-dash, Traefik provider detection, `HART_URL`/`SERVICE_URL` trailing-slash and bare scheme handling, hook event lowercasing, `regex_escape()` dot escaping, mixed-case hart domains and wildcard inputs, and generated Traefik `Host()` / `HostRegexp()` rules and Cloudflare DNS targets lowercased.
+  - regression tests under a non-C locale (e.g. `LC_ALL=fr_FR.UTF-8`)
+- This run lands a `docs(agents)` update to `AGENTS.md` with `Closes #77` and `Closes #78` in the commit body so the stale PRs are closed on merge. If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the original objective is resolved, PRs #77 and #78 are closed as superseded, and no further action is needed.
