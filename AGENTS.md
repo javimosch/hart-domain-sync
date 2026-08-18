@@ -602,3 +602,17 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
 - `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` pass in this environment.
 - No dev code change was required for the empty open issue list. The original objective is resolved and PR #77 will be closed on merge.
 
+## 2026-08-18 architect plan and final status (am-add074-dks3g5hfv5e8-80f76def)
+
+- `gh issue list --state open` returns `[]`; issues #1, #16, #17, #68, #69, and #70 remain CLOSED. No open GitHub issues remain to fix.
+- `gh pr list --state open` returns only PR #79 (`am/am-add074-dks2lj19d4a4-cfcdf6ac`, `docs(agents): add current run architect plan and close stale PRs #77/#78 as superseded`). It is `mergeable: CONFLICTING` and fully superseded by the current branch and `origin/master` (commit `ba113b5`): the open issue list is empty, the earlier `docs(agents): add current run architect plan and close stale PR #77 as superseded` commit is already merged, and the stale `chore(prs): close stale PRs #77 and #78 as superseded` commit in PR #79 is no longer needed because those PRs are already closed/merged.
+- The current branch `am/am-add074-dks3g5hfv5e8-80f76def` is at the same commit as `origin/master` (`ba113b5`) with a clean worktree. `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` pass in this environment.
+- No dev code change is required to resolve the empty open issue list. This run lands a `docs(agents)` update to `AGENTS.md` with `Closes #79` in the commit body so the stale PR is closed on merge.
+- QA runs the final verification gate:
+  - `bash -n hart-domain-sync.sh hart-domain-hook.sh`
+  - `shellcheck hart-domain-sync.sh hart-domain-hook.sh` (if installed)
+  - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, `--remove`, leading `*.`, and trailing DNS dots
+  - regression for the latest merged fixes in `origin/master`: RFC 3986 URL schemes (`h2c://`, `coap+tcp://`, uppercase `HTTP://`), quote-aware YAML inline comment stripping, `rule_claimed()` backtick matching, hook log fallback to `/tmp`, hart-fetched domain normalization, and locale-hardened `cf_val()`/`slug()`/`regex_escape()`/provider detection
+  - regression tests under a non-C locale (e.g. `LC_ALL=fr_FR.UTF-8`) for the locale-hardened code
+- If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the original objective is resolved, PR #79 is closed as superseded, and no further action is needed.
+
