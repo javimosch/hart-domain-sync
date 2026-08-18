@@ -602,3 +602,24 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
 - `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` pass in this environment.
 - No dev code change was required for the empty open issue list. The original objective is resolved and PR #77 will be closed on merge.
 
+## 2026-08-18 architect plan (am-add074-dks498zt3izv-16740cf1)
+
+- `gh issue list --state open` returns `[]`; issues #1, #16, #17, #68, #69, and #70 remain CLOSED. No open GitHub issues remain to fix.
+- `gh pr list --state open` returns PR #79 (`am/am-add074-dks2lj19d4a4-cfcdf6ac`, `docs(agents): add current run architect plan and close stale PRs #77/#78 as superseded`) and PR #80 (`am/am-add074-dks3g5hfv5e8-80f76def`, `docs(agents): add current run architect plan and close stale PR #79 as superseded`). Both are stale, merge-conflicting docs-only PRs from earlier runs.
+- The current branch `am/am-add074-dks498zt3izv-16740cf1` is at the same commit as `origin/master` (`ba113b5`) with a clean worktree.
+- `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` pass in this environment.
+- No dev code change is required to resolve the empty open issue list. This run lands a `docs(agents)` update to `AGENTS.md` with `Closes #79` and `Closes #80` in the commit body so the stale PRs are closed on merge.
+- QA runs the final verification gate:
+  - `bash -n hart-domain-sync.sh hart-domain-hook.sh`
+  - `shellcheck hart-domain-sync.sh hart-domain-hook.sh` (if installed)
+  - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, `--remove`, leading `*.`, and trailing DNS dots
+  - regression for the latest merged fixes in `origin/master`: RFC 3986 URL schemes, quote-aware YAML comment stripping, rule collision detection, hook log fallback to `/tmp`, hart-fetched domain normalization, and locale-hardened `LC_ALL=C` parsing
+  - if QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the original objective is resolved and the stale PRs are closed.
+
+## 2026-08-18 final status (am-add074-dks498zt3izv-16740cf1)
+
+- `gh issue list --state open` returns `[]`; issues #1, #16, #17, #68, #69, and #70 remain CLOSED. No open GitHub issues remain to fix.
+- `gh pr list --state open` returned PR #79 (`docs(agents): add current run architect plan and close stale PRs #77/#78 as superseded`) and PR #80 (`docs(agents): add current run architect plan and close stale PR #79 as superseded`). Both are stale, merge-conflicting docs-only PRs from earlier runs. The current branch `am/am-add074-dks498zt3izv-16740cf1` is one commit ahead of `origin/master` (`ba113b5`) with a clean worktree; the `docs(agents): add current run status and close stale PRs #79/#80 as superseded` commit (with `Closes #79` and `Closes #80` in the body) supersedes them.
+- `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` pass in this environment.
+- No dev code change was required for the empty open issue list. The original objective is resolved and PRs #79 and #80 will be closed on merge.
+
