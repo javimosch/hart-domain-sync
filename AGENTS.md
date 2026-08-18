@@ -530,3 +530,23 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
   - regression tests for the latest merged fixes now in `origin/master`: hook log fallback to `/tmp` when the log directory is unwritable or the configured log path is a directory, and hart-fetched domain normalization before validation (`*.`, trailing dots, whitespace)
   - regression tests under a non-C locale (e.g. `LC_ALL=fr_FR.UTF-8`) for the locale-hardened code: `cf_val()` parsing with `export`/CRLF, `slug()` dot-to-dash, Traefik provider detection, `HART_URL`/`SERVICE_URL` trailing-slash and bare scheme handling, hook event lowercasing, `regex_escape()` dot escaping, mixed-case hart domains and wildcard inputs, and generated Traefik `Host()` / `HostRegexp()` rules and Cloudflare DNS targets lowercased
 - If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the objective is resolved and no further action is needed.
+
+## 2026-08-18 architect plan (am-add074-dkry7sv8a5u1-c8862d24)
+
+- `gh issue list --state open` returns issues #70 and #69. Issue #68 is already CLOSED and its `rule_claimed` fix is present in `origin/master`.
+- `gh pr list --state open` returns PR #72 (`am/am-add074-dkrwfhi3j297-5230f97a`, `fix(sync): accept RFC 3986 URI schemes in URL validation`) and PR #73 (`am/am-add074-dkrxbn1sq1q7-4e7463ec`, `docs(agents): add current run architect plan and open issue/PR status`). Both branches contain the needed code fixes but bundle stale or overlapping `AGENTS.md` plan sections; they should be closed as superseded once the current branch lands clean, focused commits.
+- The current branch `am/am-add074-dkry7sv8a5u1-c8862d24` is three commits ahead of `origin/master` (`ca3f690`):
+  1. `d432e83 fix(sync): accept RFC 3986 URI schemes in URL validation` (`Fixes #70`).
+  2. `abb3411 fix(sync): strip inline YAML comments from directory-mode rule scanner` (`Refs #69`).
+  3. `0aed181 fix(sync): strip inline YAML comments from file-mode rule parser` (`Fixes #69`).
+- `bash -n hart-domain-sync.sh hart-domain-hook.sh` passes.
+- No additional dev code changes are required.
+- QA runs the verification gate:
+  - `bash -n hart-domain-sync.sh hart-domain-hook.sh`
+  - `shellcheck hart-domain-sync.sh hart-domain-hook.sh` (if installed)
+  - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, `--remove`, leading `*.`, and trailing DNS dots
+  - regression for #70: set `HART_URL`/`SERVICE_URL` to `h2c://127.0.0.1:8799`, `coap+tcp://127.0.0.1:8799`, and an uppercase `HTTP://127.0.0.1:8799`; confirm the scheme guard accepts them and the trailing-slash loop still strips trailing `/` characters; confirm `http://` (bare scheme, no host) is still rejected.
+  - regression for #69: place a foreign router with `rule: "Host(\`foo.com\`)" # my router` in `DEST` or `SINGLE_FILE` and reconcile with hart returning `foo.com`; confirm the scanner strips the comment and skips `foo.com` with `skip: foo.com is already routed by ...`. Also test a rule containing a quoted `#`, e.g. `rule: "Host(\`foo#bar.com\`)"`, to ensure it is not mistaken for an inline comment.
+  - combined regression: foreign router with an inline comment and a backtick-quoted `Host()` rule; confirm the scanners strip the comment and still match the rule.
+  - regression tests under a non-C locale (e.g. `LC_ALL=fr_FR.UTF-8`) for the locale-hardened code now in `origin/master`: `cf_val()` parsing with `export`/CRLF, `slug()` dot-to-dash, Traefik provider detection, `HART_URL`/`SERVICE_URL` trailing-slash and bare scheme handling, hook event lowercasing, `regex_escape()` dot escaping, mixed-case hart domains and wildcard inputs, and generated Traefik `Host()` / `HostRegexp()` rules and Cloudflare DNS targets lowercased.
+- If the gate passes, close PR #72 and PR #73 as superseded and the open issues #69/#70 will auto-close on merge because the commit messages contain `Fixes #69` and `Fixes #70`. If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR.
