@@ -69,7 +69,13 @@ HART_URL="$(trim "$HART_URL")"
 [ -n "$HART_URL" ] || HART_URL="http://127.0.0.1:8799"
 SERVICE_URL="$(trim "$SERVICE_URL")"
 [ -n "$SERVICE_URL" ] || SERVICE_URL="http://127.0.0.1:8799"
+# Reduce configured URLs to scheme://authority so a path, query string, or
+# fragment cannot leak into the hart API endpoint (/v1/domain) or the Traefik
+# upstream URL. Keep the existing trailing-slash loop as a backstop.
+url_base() { printf '%s' "$1" | LC_ALL=C sed -n 's/^\([[:alpha:]][-+[:alnum:].]*:\/\/[^/?#]*\).*/\1/p'; }
 url_has_path_after_scheme() { (LC_ALL=C; [[ "$1" =~ ^[[:alpha:]][-+[:alnum:].]*://[^/] ]]); }
+HART_URL="$(url_base "$HART_URL")"
+SERVICE_URL="$(url_base "$SERVICE_URL")"
 while [[ "$HART_URL" == */ ]] && url_has_path_after_scheme "$HART_URL"; do HART_URL="${HART_URL%/}"; done
 while [[ "$SERVICE_URL" == */ ]] && url_has_path_after_scheme "$SERVICE_URL"; do SERVICE_URL="${SERVICE_URL%/}"; done
 ENTRYPOINT="${ENTRYPOINT:-websecure}"           # Traefik TLS entrypoint name
