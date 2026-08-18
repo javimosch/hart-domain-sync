@@ -516,3 +516,21 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
   - regression tests for the latest merged fixes now in `origin/master`: hook log fallback to `/tmp` when the log directory is unwritable or the configured log path is a directory, and hart-fetched domain normalization before validation (`*.`, trailing dots, whitespace)
   - regression tests under a non-C locale (e.g. `LC_ALL=fr_FR.UTF-8`) for the locale-hardened code: `cf_val()` parsing with `export`/CRLF, `slug()` dot-to-dash, Traefik provider detection, `HART_URL`/`SERVICE_URL` trailing-slash and bare scheme handling, hook event lowercasing, `regex_escape()` dot escaping, mixed-case hart domains and wildcard inputs, and generated Traefik `Host()` / `HostRegexp()` rules and Cloudflare DNS targets lowercased
 - If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the objective is resolved and no further action is needed.
+
+## 2026-08-18 architect plan (am-add074-dkrwfhi3j297-5230f97a)
+
+- `gh issue list --state open` returns issues #70, #69, and #68. All three are addressed by the current branch `am/am-add074-dkrwfhi3j297-5230f97a`, which is 3 commits ahead of `origin/master`:
+  1. `fix(sync): accept RFC 3986 URI schemes in URL validation` (`f68d200`) — `url_has_path_after_scheme` now uses `^[[:alpha:]][[:alnum:].+-]*://[^/]`, so schemes containing digits, plus, dot, or hyphen (e.g. `h2c://`, `coap+tcp://`) are accepted. `Fixes #70`.
+  2. `fix(sync): align rule_claimed Host() pattern with scanner` (`98d1891`) — removes the extra backslash from the single-quoted `want` construction in `rule_claimed()` so it matches the `Host(\`domain\`)` form extracted by the scanner. `Fixes #68`.
+  3. `fix(sync): strip inline YAML comments from rule scanners` (`cc42fd5`) — adds a `strip_comment()` helper to both the directory-mode `PYCLAIM` scanner and the file-mode `PYMERGE` `host_rules` parser so unquoted `#` inline comments are removed before rule comparison. `Fixes #69`.
+- `gh pr list --state open` returns PR #71 (`am/am-add074-dkrvjbqasnsa-acb2ec90`, `docs(agents): add current run architect plan`). Its plan is stale and the branch it documents has been superseded by the current branch, which already contains the real fixes for #70/#69/#68. PR #71 should be closed as superseded.
+- `bash -n hart-domain-sync.sh hart-domain-hook.sh` should be re-run; `shellcheck` if installed.
+- QA runs the verification gate focused on the three new fixes:
+  - `bash -n hart-domain-sync.sh hart-domain-hook.sh`
+  - `shellcheck hart-domain-sync.sh hart-domain-hook.sh` (if installed)
+  - manual dry-runs in both directory and file modes with a mock hart server
+  - regression for #70: `HART_URL`/`SERVICE_URL` values `h2c://127.0.0.1:8799`, `coap+tcp://127.0.0.1:8799`, `s3://bucket/path` (must still have non-empty host) — confirm the scheme is accepted, trailing slashes are stripped, and the hart/Traefik calls use the cleaned URL.
+  - regression for #68: place a foreign router for `foo.com` in `DEST`/`SINGLE_FILE` with both `rule: "Host(\`foo.com\`)"` and `rule: "Host(\`foo.com\`)"`; reconcile with hart returning `foo.com`; confirm `hart-foo-com.yml` / the `hart-foo-com` key is skipped with `skip: foo.com is already routed by ...`.
+  - regression for #69: place a foreign router with inline comments, e.g. `rule: "Host(\`foo.com\`)" # my router`; reconcile with hart returning `foo.com`; confirm the comment text is not part of the rule string and the domain is skipped.
+  - combined regression: foreign router with an inline comment and an escaped or unescaped backtick form; confirm the scanners strip the comment and still match the rule.
+- If the gate passes, close PR #71 as superseded; the code commits already include `Fixes #70`, `Fixes #69`, and `Fixes #68`, so the open issues will auto-close on merge. If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR.
