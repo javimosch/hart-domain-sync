@@ -26,6 +26,9 @@ fi
 
 # Detach from hart's request stdout/stderr once the log path is final.
 exec >/dev/null 2>&1
+# Do not let the background nohup child inherit hart's request stdin,
+# which could keep the HTTP pipe open and block the request lifecycle.
+exec </dev/null
 
 if [ -d "$SYNC" ] || [ ! -x "$SYNC" ]; then
   printf '%s\n' "HART_DOMAIN_SYNC is not an executable file: $SYNC" >>"$LOG"
