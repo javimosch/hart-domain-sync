@@ -352,6 +352,25 @@ files = ([os.environ["SINGLE_FILE"]] if mode == "file"
                if not os.path.basename(f).startswith(prefix)])
 name_re = re.compile(r"^    ([\w.-]+):\s*$")
 rule_re = re.compile(r"^\s*rule:\s*(.+?)\s*$")
+
+def strip_comment(s):
+    in_quote = None
+    out = []
+    for c in s:
+        if in_quote:
+            if c == in_quote:
+                in_quote = None
+            out.append(c)
+            continue
+        if c in ('"', "'"):
+            in_quote = c
+            out.append(c)
+            continue
+        if c == '#':
+            break
+        out.append(c)
+    return ''.join(out).rstrip()
+
 for f in files:
     try: lines = open(f).read().split("\n")
     except OSError: continue
@@ -361,7 +380,8 @@ for f in files:
         if m: owner = m.group(1); continue
         m = rule_re.match(line)
         if m and owner and not owner.startswith(prefix):
-            print("%s\t%s" % (m.group(1).strip('"\''), owner))
+            rule = strip_comment(m.group(1)).strip('"\'').strip()
+            print("%s\t%s" % (rule, owner))
 PYCLAIM
 )
 
