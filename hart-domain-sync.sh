@@ -56,6 +56,9 @@ TRAEFIK_MAIN="$(trim "$TRAEFIK_MAIN")"
 SINGLE_FILE="${SINGLE_FILE:-/etc/traefik/dynamic.yml}"   # target in file mode
 SINGLE_FILE="$(trim "$SINGLE_FILE")"
 [ -n "$SINGLE_FILE" ] || SINGLE_FILE="/etc/traefik/dynamic.yml"
+LOCK_FILE="${LOCK_FILE:-/var/lock/hart-domain-sync.lock}"   # advisory lock to serialize reconciles
+LOCK_FILE="$(trim "$LOCK_FILE")"
+[ -n "$LOCK_FILE" ] || LOCK_FILE="/var/lock/hart-domain-sync.lock"
 BOX_IP="${BOX_IP:-}"                            # REQUIRED for DNS: this box's public IPv4 (A target)
 BOX_IP6="${BOX_IP6:-}"                          # this box's public IPv6 (AAAA target) — set if your zone has a proxied wildcard
 BOX_IP="$(trim "$BOX_IP")"
@@ -139,6 +142,25 @@ fi
 if ! url_has_path_after_scheme "$SERVICE_URL"; then
   log "SERVICE_URL '$SERVICE_URL' is missing a host; using HART_URL"
   SERVICE_URL="$HART_URL"
+fi
+
+# The systemd timer and the hart hook can both launch this script. In file
+# mode two parallel reconciles can stage changes in separate tmpdirs and race
+# to replace the same SINGLE_FILE. Take an advisory lock so only one reconcile
+# (including a fast remove) runs at a time.
+if command -v flock >/dev/null 2>&1; then
+  if mkdir -p "$(dirname "$LOCK_FILE")" 2>/dev/null; then
+    if ! exec 200>"$LOCK_FILE"; then
+      log "WARN: cannot open $LOCK_FILE; running without advisory lock"
+    elif ! flock -n 200; then
+      log "another hart-domain-sync is already running; aborting"
+      exit 0
+    fi
+  else
+    log "WARN: cannot create lock directory $(dirname "$LOCK_FILE"); running without advisory lock"
+  fi
+else
+  log "WARN: flock not found; running without advisory lock"
 fi
 
 # Optional CLI mode: --remove <domain> (called by HART_DOMAIN_HOOK on removal).
