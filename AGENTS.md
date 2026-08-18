@@ -585,7 +585,7 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
 
 - `gh issue list --state open` returns `[]`; issues #68, #69, and #70 are CLOSED. No open GitHub issues remain to fix.
 - `gh pr list --state open` returns only PR #77 (`docs(agents): add current run architect plan and close stale PR #76 as superseded`). It is a stale docs-only PR from the previous run; the current branch `am-add074-dks1sfdxhsgq-39d04fa5` is at the same commit as `origin/master` (`713e14e`) with a clean worktree. The current run supersedes PR #77.
-- `bash -n hart-domain-sync.sh hart-domain-hook.sh` passes; `shellcheck` is not installed in this environment.
+- `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` pass in this environment.
 - No dev code change is required to resolve the empty open issue list. This run lands a `docs(agents)` update to `AGENTS.md` with `Closes #77` in the commit body so the stale PR is closed on merge.
 - QA runs the final verification gate:
   - `bash -n hart-domain-sync.sh hart-domain-hook.sh`
