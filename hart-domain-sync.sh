@@ -636,13 +636,31 @@ def qstrip(s):
         return s[1:-1].strip()
     return s
 
+def strip_comment(s):
+    in_quote = None
+    out = []
+    for c in s:
+        if in_quote:
+            if c == in_quote:
+                in_quote = None
+            out.append(c)
+            continue
+        if c in ('"', "'"):
+            in_quote = c
+            out.append(c)
+            continue
+        if c == '#':
+            break
+        out.append(c)
+    return ''.join(out).rstrip()
+
 def host_rules(sections):
     rules = {}
     for name, block in (sections.get("routers") or {}).items():
         for line in block.split("\n"):
             t = line.strip()
             if t.startswith("rule:"):
-                rules.setdefault(qstrip(t[5:]), name)
+                rules.setdefault(qstrip(strip_comment(t[5:]).strip()), name)
                 break
     return rules
 
