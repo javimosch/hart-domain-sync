@@ -616,3 +616,22 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
   - regression tests under a non-C locale (e.g. `LC_ALL=fr_FR.UTF-8`) for the locale-hardened code
 - If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the original objective is resolved, PR #79 is closed as superseded, and no further action is needed.
 
+## 2026-08-18 architect plan (am-add074-dks5wz19v9ce-471df46e)
+
+- `gh issue list --state open` returns issues #82, #83, and #84. No other open GitHub issues remain.
+- `gh pr list --state open` returns PR #85 (`docs(agents): add current run final status and close stale PR #81 as superseded`) and PR #81 (`docs(agents): add current run status and close stale PRs #79/#80 as superseded`). Both are stale, merge-conflicting docs-only PRs from earlier runs and are superseded by the current branch.
+- The current branch `am/am-add074-dks5wz19v9ce-471df46e` is one commit ahead of `origin/master` (`92132f3`):
+  - Commit `4e247e9` (`fix(hook): redirect stdin to /dev/null for nohup children`) already implements the fix for issue #82: `hart-domain-hook.sh` now runs `exec </dev/null` before spawning the background `nohup` sync, and the commit body contains `Fixes #82`. QA must verify it.
+- Two real code fixes remain for dev to land as clean, separate conventional commits on this branch:
+  1. `fix(sync): strip path components from HART_URL and SERVICE_URL` — issue #84. The current `url_has_path_after_scheme` only validates the scheme/authority prefix; it does not reject or strip a path such as `/api`. Add a `url_base()` helper that extracts `scheme://authority` and discards any path, query, or fragment. Apply it to `HART_URL` and `SERVICE_URL` after trim/default but before the trailing-slash loop and validation. Log a warning when a path is stripped. This ensures calls become `.../v1/domain` and Traefik upstream URLs are clean base URLs. `Fixes #84`.
+  2. `fix(sync): add advisory lock to prevent concurrent reconcile races` — issue #83. The hook and the systemd timer can run `hart-domain-sync` concurrently. In file mode they can read the same `SINGLE_FILE`, stage in separate `tmpdirs`, and race to replace it. Add a non-blocking advisory file lock at startup, e.g. via `flock`, using a configurable `HART_DOMAIN_SYNC_LOCK` path defaulting to `/var/lock/hart-domain-sync` or `/run/hart-domain-sync`. If the lock is already held, log and exit 0 so the second invocation is a no-op. `Fixes #83`.
+- Do not bundle the stale `AGENTS.md` plan content from PR #81 or #85; the current run's `docs(agents)` update supersedes them.
+- QA runs the verification gate after dev commits:
+  - `bash -n hart-domain-sync.sh hart-domain-hook.sh`
+  - `shellcheck hart-domain-sync.sh hart-domain-hook.sh` (if installed)
+  - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, `--remove`, and the new fixes
+  - regression for #84: `HART_URL`/`SERVICE_URL` with a path (`http://127.0.0.1:8799/api`), query (`?x=1`), fragment (`#x`), and multiple trailing slashes; confirm both become clean base URLs and API calls use `/v1/domain` while Traefik upstream URLs have no path.
+  - regression for #83: launch two `hart-domain-sync` processes simultaneously in file mode and confirm only one completes the merge (the other exits cleanly without corrupting `SINGLE_FILE`).
+  - regression for #82: run the hook under a piped stdin and confirm the background nohup child does not inherit the pipe.
+- If the gate passes, close PR #81 and PR #85 as superseded. If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR.
+
