@@ -69,7 +69,7 @@ HART_URL="$(trim "$HART_URL")"
 [ -n "$HART_URL" ] || HART_URL="http://127.0.0.1:8799"
 SERVICE_URL="$(trim "$SERVICE_URL")"
 [ -n "$SERVICE_URL" ] || SERVICE_URL="http://127.0.0.1:8799"
-url_has_path_after_scheme() { (LC_ALL=C; [[ "$1" =~ ^[[:alpha:]]+://[^/] ]]); }
+url_has_path_after_scheme() { (LC_ALL=C; [[ "$1" =~ ^[[:alpha:]][-+[:alnum:].]*://[^/] ]]); }
 while [[ "$HART_URL" == */ ]] && url_has_path_after_scheme "$HART_URL"; do HART_URL="${HART_URL%/}"; done
 while [[ "$SERVICE_URL" == */ ]] && url_has_path_after_scheme "$SERVICE_URL"; do SERVICE_URL="${SERVICE_URL%/}"; done
 ENTRYPOINT="${ENTRYPOINT:-websecure}"           # Traefik TLS entrypoint name
