@@ -121,6 +121,29 @@ fi
 
 log() { echo "$(date -u +%H:%M:%S) [hart-domain-sync] $*" >&2; }
 
+# Serialize concurrent runs before touching any shared config. The systemd timer
+# and the hart hook both launch this script independently; in file mode they can
+# otherwise read the same SINGLE_FILE, stage changes in separate tmpdirs, and race
+# to replace it. Use a non-blocking exclusive advisory flock so only one reconcile
+# runs at a time; a busy second invocation exits cleanly rather than waiting.
+HART_DOMAIN_SYNC_LOCK="${HART_DOMAIN_SYNC_LOCK:-/var/lock/hart-domain-sync.lock}"
+HART_DOMAIN_SYNC_LOCK="$(trim "$HART_DOMAIN_SYNC_LOCK")"
+[ -n "$HART_DOMAIN_SYNC_LOCK" ] || HART_DOMAIN_SYNC_LOCK="/var/lock/hart-domain-sync.lock"
+if command -v flock >/dev/null 2>&1; then
+  if mkdir -p "$(dirname "$HART_DOMAIN_SYNC_LOCK")" 2>/dev/null; then
+    if ! { exec 200>"$HART_DOMAIN_SYNC_LOCK"; } 2>/dev/null; then
+      log "WARN: cannot open lock file $HART_DOMAIN_SYNC_LOCK; running without advisory lock"
+    elif ! flock -n 200 2>/dev/null; then
+      log "another hart-domain-sync is already running; skipping"
+      exit 0
+    fi
+  else
+    log "WARN: cannot create lock directory $(dirname "$HART_DOMAIN_SYNC_LOCK"); running without advisory lock"
+  fi
+else
+  log "WARN: flock not found; running without advisory lock"
+fi
+
 # PROPAGATE_WAIT is passed straight to sleep(); a non-numeric or negative
 # value would abort the script during the ACME wait. Guard it early so the
 # default is a safe, valid number of seconds.
