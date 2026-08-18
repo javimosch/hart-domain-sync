@@ -598,3 +598,12 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
     - `cf_val()` parsing with `export`/CRLF, `slug()` dot-to-dash, Traefik provider detection, `HART_URL`/`SERVICE_URL` trailing-slash and bare scheme handling, hook event lowercasing, `regex_escape()` dot escaping, mixed-case hart domains and wildcard inputs, and generated Traefik `Host()` / `HostRegexp()` rules and Cloudflare DNS targets lowercased.
   - regression tests under a non-C locale (e.g. `LC_ALL=fr_FR.UTF-8`)
 - This run lands a `docs(agents)` update to `AGENTS.md` with `Closes #77` and `Closes #78` in the commit body so the stale PRs are closed on merge. If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the original objective is resolved, PRs #77 and #78 are closed as superseded, and no further action is needed.
+
+## 2026-08-18 dev verification and final status (am-add074-dks2lj19d4a4-cfcdf6ac)
+
+- Dev ran the verification gate on `hart-domain-sync.sh` and `hart-domain-hook.sh`:
+  - `bash -n hart-domain-sync.sh hart-domain-hook.sh` passed.
+  - `shellcheck hart-domain-sync.sh hart-domain-hook.sh` passed.
+  - Manual dry-runs in both directory and file modes covered `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, `--remove`, leading `*.`, and trailing DNS dots.
+  - Regression for the latest merged fixes passed: RFC 3986 schemes (`h2c://`, `coap+tcp://`, uppercase `HTTP://`), bare scheme rejection, trailing-slash stripping, rule scanners with unquoted inline YAML comments, and `rule_claimed()` matching.
+- No regressions were found. QA is asked to confirm the final verification gate. Once QA signs off, the objective is resolved and PRs #77 and #78 are superseded by the current branch.
