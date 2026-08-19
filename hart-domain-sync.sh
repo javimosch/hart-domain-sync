@@ -73,7 +73,7 @@ SERVICE_URL="$(trim "$SERVICE_URL")"
 # fragment cannot leak into the hart API endpoint (/v1/domain) or the Traefik
 # upstream URL. Keep the existing trailing-slash loop as a backstop.
 url_base() { printf '%s' "$1" | LC_ALL=C sed -n 's/^\([[:alpha:]][-+[:alnum:].]*:\/\/[^/?#]*\).*/\1/p'; }
-url_has_path_after_scheme() { (LC_ALL=C; [[ "$1" =~ ^[[:alpha:]][-+[:alnum:].]*://[^/] ]]); }
+url_has_path_after_scheme() { (LC_ALL=C; [[ "$1" =~ ^[[:alpha:]][-+[:alnum:].]*://[^/[:space:]] ]]); }
 HART_URL="$(url_base "$HART_URL")"
 SERVICE_URL="$(url_base "$SERVICE_URL")"
 while [[ "$HART_URL" == */ ]] && url_has_path_after_scheme "$HART_URL"; do HART_URL="${HART_URL%/}"; done
@@ -230,6 +230,8 @@ cf() { # cf <METHOD> <path> [json-body]
 
 slug() { printf '%s' "$1" | LC_ALL=C tr '[:upper:]' '[:lower:]' | LC_ALL=C tr '.' '-' | LC_ALL=C tr -cd 'a-z0-9-'; }
 regex_escape() { printf '%s' "$1" | LC_ALL=C sed 's/\./\\\\./g'; }
+lowercase() { printf '%s' "$1" | LC_ALL=C tr '[:upper:]' '[:lower:]'; }
+urlencode() { printf '%s' "$1" | jq -sRr '@uri'; }
 
 fast_remove() { # fast_remove <domain>: delete the per-domain router without fetching hart
   local domain="$1" s f key changed
@@ -416,10 +418,11 @@ PYCLAIM
 
 # rule_claimed <domain> -> echoes the owning router name if the rule is taken
 rule_claimed() {
-  local want r owner
+  local want want_lc r owner
   want='Host(`'"$1"'`)'
+  want_lc="$(lowercase "$want")"
   while IFS=$'\t' read -r r owner; do
-    [ "$r" = "$want" ] && { printf '%s' "$owner"; return 0; }
+    [ "$(lowercase "$r")" = "$want_lc" ] && { printf '%s' "$owner"; return 0; }
   done <<<"$CLAIMED"
 }
 
@@ -462,12 +465,12 @@ zone_for() { # echo the most specific whitelist zone that is a suffix of $1, els
 cf_upsert() { # cf_upsert <fqdn> <zone> <type> <content>
   local d="$1" z="$2" t="$3" c="$4" zid rid body
   [ -n "$c" ] || { log "DNS: skipping $t $d — content is empty"; return; }
-  zid="$(cf GET "/zones?name=$z" | jq -r '.result[0].id // empty')"
+  zid="$(cf GET "/zones?name=$(urlencode "$z")" | jq -r '.result[0].id // empty')"
   [ -n "$zid" ] || { log "DNS: no zone id for $z"; return; }
   body="$(jq -n --arg type "$t" --arg name "$d" --arg content "$c" \
     --argjson ttl 120 --argjson proxied false \
     '{type: $type, name: $name, content: $content, ttl: $ttl, proxied: $proxied}')"
-  rid="$(cf GET "/zones/$zid/dns_records?type=$t&name=$d" | jq -r '.result[0].id // empty')"
+  rid="$(cf GET "/zones/$zid/dns_records?type=$(urlencode "$t")&name=$(urlencode "$d")" | jq -r '.result[0].id // empty')"
   if [ -n "$rid" ]; then
     if cf PUT "/zones/$zid/dns_records/$rid" "$body" | jq -e '.success==true' >/dev/null 2>&1; then
       log "DNS: $t $d -> $c (updated)"

@@ -666,3 +666,21 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
   - regression tests under a non-C locale (e.g. `LC_ALL=fr_FR.UTF-8`) for the locale-hardened code
 - If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the objective is resolved, PR #89 is closed as superseded, and no further action is needed.
 
+## 2026-08-19 architect plan and final status (am-add074-dkssstaeum32-19bbbc9b)
+
+- `gh issue list --state open` returns `[]`; issues #1, #16, #17, #68, #69, #70, #82, #83, #84, and all later reported issues remain CLOSED. No open GitHub issues remain to fix.
+- `gh pr list --state open` returns `[]`; no open PRs remain. All recent fixes for issue #84 (`HART_URL`/`SERVICE_URL` path/query stripping, PR #87 `c7e8a9a`), issue #82 (hook `nohup` stdin redirect to `/dev/null`, PR #86), and issue #83 (advisory `flock` serialization of concurrent reconciles, PR #85) are already present in `origin/master` (`3d49928`).
+- The current branch `am-add074-dkssstaeum32-19bbbc9b` is at the same commit as `origin/master` (`3d49928`) with a clean worktree. `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass in this environment.
+- No dev code change is required to resolve the empty open issue list. This run lands a `docs(agents)` update to `AGENTS.md` recording the empty issue/PR status and the QA verification gate; the original objective is resolved.
+- QA runs the final verification gate:
+  - `bash -n hart-domain-sync.sh hart-domain-hook.sh`
+  - `shellcheck hart-domain-sync.sh hart-domain-hook.sh` (if installed)
+  - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, `--remove`, leading `*.`, and trailing DNS dots
+  - regression for the latest merged fixes in `origin/master`:
+    - `HART_URL`/`SERVICE_URL` with a path or query (e.g. `http://127.0.0.1:8799/v1/extra?foo=bar`) are reduced to `scheme://authority` and still strip trailing slashes.
+    - the hook detaches from hart's stdin before nohup (`exec </dev/null`) and redirects the child's stdin to `/dev/null`.
+    - two overlapping `hart-domain-sync` invocations serialize via the advisory lock; the second logs `another hart-domain-sync is already running; skipping` and exits 0.
+  - regression for earlier merged fixes: RFC 3986 URL schemes, quote-aware YAML inline comment stripping, `rule_claimed()` backtick matching, hook log fallback to `/tmp`, hart-fetched domain normalization, and locale-hardened `cf_val()`/`slug()`/`regex_escape()`/provider detection
+  - regression tests under a non-C locale (e.g. `LC_ALL=fr_FR.UTF-8`) for the locale-hardened code
+- If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the objective is resolved and no further action is needed.
+
