@@ -499,13 +499,16 @@ if [ "$TRAEFIK_MODE" = "file" ]; then VERB="staged"; else VERB="written"; fi
 NEEDS_WILDCARD=0
 for d in "${DOMAINS[@]}"; do
   [ -n "$d" ] || continue
+  # An external wildcard (WILDCARD_INSTANCE_DOMAIN) is managed outside of this
+  # script, so it takes precedence when a domain matches both it and the managed
+  # wildcard (WILDCARD_DOMAIN).
+  if under_wildcard_instance "$d"; then
+    log "wildcard instance: $d -> *.$WILDCARD_INSTANCE_DOMAIN (skipping per-domain Traefik/DNS)"
+    continue
+  fi
   if under_wildcard "$d"; then
     NEEDS_WILDCARD=1
     log "wildcard: $d -> *.$WILDCARD_DOMAIN (skipping per-domain Traefik/DNS)"
-    continue
-  fi
-  if under_wildcard_instance "$d"; then
-    log "wildcard instance: $d -> *.$WILDCARD_INSTANCE_DOMAIN (skipping per-domain Traefik/DNS)"
     continue
   fi
   s="$(slug "$d")"
