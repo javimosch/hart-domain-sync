@@ -684,3 +684,21 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
   - regression tests under a non-C locale (e.g. `LC_ALL=fr_FR.UTF-8`) for the locale-hardened code
 - If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the objective is resolved and no further action is needed.
 
+## 2026-08-19 final status and close stale PR #92 (am-add074-dksujlsr2ak8-7117c76a)
+
+- `gh issue list --state open` returns `[]`; all reported issues remain CLOSED. No open GitHub issues remain to fix.
+- `gh pr list --state open` returns only PR #92 (`am/am-add074-dkstng30bsmw-0203f45b`, `fix(sync): reject whitespace after scheme in URL validation`). Its three `hart-domain-sync.sh` robustness fixes (reject whitespace after the scheme, compare existing `Host()` rules case-insensitively, and URL-encode Cloudflare API query parameters) are already present in `origin/master` (`61884c0`) and its `AGENTS.md` plan is stale. PR #92 is merge-conflicting and should be closed as superseded.
+- The current branch `am-add074-dksujlsr2ak8-7117c76a` is one commit ahead of `origin/master` (`61884c0`) and the worktree is clean. `bash -n hart-domain-sync.sh hart-domain-hook.sh` passes.
+- No dev code change is required to resolve the empty open issue list. This run lands a `docs(agents)` update to `AGENTS.md` recording the open PR status and the QA verification gate, with `Closes #92` in the commit body.
+- QA runs the final verification gate:
+  - `bash -n hart-domain-sync.sh hart-domain-hook.sh`
+  - `shellcheck hart-domain-sync.sh hart-domain-hook.sh` (if installed)
+  - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, `--remove`, leading `*.`, and trailing DNS dots
+  - regression for the latest merged fixes in `origin/master`:
+    - `HART_URL`/`SERVICE_URL` with whitespace after the scheme are rejected by `url_has_path_after_scheme()` and reduced to a clean `scheme://authority`.
+    - existing routers with mixed-case `Host()` rules are matched case-insensitively and not duplicated.
+    - Cloudflare GET query parameters are URL-encoded, so wildcard or special-character zone/record names are not mangled.
+  - regression for earlier merged fixes: path/query stripping of URLs, trailing-slash handling, RFC 3986 URL schemes, quote-aware YAML inline comment stripping, `rule_claimed()` backtick matching, hook `nohup` stdin redirect, advisory `flock` serialization, hart-fetched domain normalization, and locale-hardened helpers
+  - regression tests under a non-C locale (e.g. `LC_ALL=fr_FR.UTF-8`)
+- If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the objective is resolved, PR #92 is closed as superseded, and no further action is needed.
+
