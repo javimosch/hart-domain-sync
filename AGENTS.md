@@ -774,3 +774,9 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
   - regression tests under a non-C locale (e.g., `LC_ALL=fr_FR.UTF-8`)
 - If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the objective is resolved, PR #98 is closed as superseded, and no further action is needed.
 
+## 2026-08-19 run notes: WILDCARD_INSTANCE_DOMAIN fix (am-add074-dkt0spgo7xh1-a22ccd6e)
+
+- Manual dry-runs for the verification gate uncovered an edge case: when `WILDCARD_INSTANCE_DOMAIN` is a child of `WILDCARD_DOMAIN` (e.g. `WILDCARD_DOMAIN=hart.intrane.fr` and `WILDCARD_INSTANCE_DOMAIN=ext.hart.intrane.fr`), a domain like `baz.ext.hart.intrane.fr` matched the broader managed wildcard first and was incorrectly routed by it.
+- This is a real, unmerged bug. Dev opened issue #99 and applied a `fix(sync)` change: the reconcile loop now checks `under_wildcard_instance()` before `under_wildcard()`, so external wildcards take precedence for their subdomains.
+- The fix was verified with `bash -n`, `shellcheck`, manual dry-runs in directory mode with mixed-case hart entries, nested `WILDCARD_DOMAIN`/`WILDCARD_INSTANCE_DOMAIN`, and `--remove`, plus a non-C locale regression run (`LC_ALL=en_US.UTF-8`).
+
