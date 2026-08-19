@@ -702,3 +702,19 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
   - regression tests under a non-C locale (e.g. `LC_ALL=fr_FR.UTF-8`)
 - If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the objective is resolved, PR #92 is closed as superseded, and no further action is needed.
 
+## 2026-08-19 final status and close stale PRs #94 and #95 (am-add074-dksxe7ks3dom-eb8b40e5)
+
+- `gh issue list --state open` returns `[]`; all reported issues remain CLOSED. No open GitHub issues remain to fix.
+- `gh pr list --state open` returns PR #94 (`am/am-add074-dksve8gfu8jv-26814583`) and PR #95 (`am/am-add074-dkswadyb7yiu-9c3e3e44`). Both are docs-only `AGENTS.md` final-status branches that are now stale:
+  - PR #94 intended to close PRs #92 and #93, but the code robustness they reference is already in `origin/master` and those PRs are already closed/merged.
+  - PR #95 was opened to supersede the merge-conflicting PR #94 and is itself now stale.
+- The current branch `am-add074-dksxe7ks3dom-eb8b40e5` is at the same commit as `origin/master` (`5b65c30`) with a clean worktree. `bash -n hart-domain-sync.sh hart-domain-hook.sh` passes and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` passes in this environment.
+- No dev code change is required to resolve the empty open issue list. This run lands a `docs(agents)` update to `AGENTS.md` recording the empty issue list and the stale open PR status, with `Closes #94` and `Closes #95` in the commit body.
+- QA runs the final verification gate:
+  - `bash -n hart-domain-sync.sh hart-domain-hook.sh`
+  - `shellcheck hart-domain-sync.sh hart-domain-hook.sh` (if installed)
+  - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, `--remove`, leading `*.`, and trailing DNS dots
+  - regression for the latest fixes in `origin/master`: URL path/query stripping, whitespace-after-scheme rejection, case-insensitive `Host()` rule matching, URL-encoded Cloudflare query parameters, hook stdin redirect, advisory `flock` serialization, hart-fetched domain normalization, and locale-hardened `cf_val()`/`slug()`/`regex_escape()`/provider detection
+  - regression tests under a non-C locale (e.g. `LC_ALL=fr_FR.UTF-8`)
+- If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR; otherwise PR #94 and PR #95 are closed as superseded and the objective is resolved.
+
