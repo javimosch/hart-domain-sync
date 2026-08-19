@@ -666,3 +666,24 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
   - regression tests under a non-C locale (e.g. `LC_ALL=fr_FR.UTF-8`) for the locale-hardened code
 - If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the objective is resolved, PR #89 is closed as superseded, and no further action is needed.
 
+## 2026-08-19 architect plan and final status (am-add074-dkstng30bsmw-0203f45b)
+
+- `gh issue list --state open` returns `[]`; all reported issues (#1, #16, #17, #68, #69, #70, #82, #83, #84) remain CLOSED. No open GitHub issues remain to fix.
+- `gh pr list --state open` returns only PR #91 (`am/am-add074-dkssstaeum32-19bbbc9b`, `docs(agents): add current run architect plan and final status`). That PR bundles three real `hart-domain-sync.sh` robustness fixes, but its title is docs-only and it carries an extra `AGENTS.md` section. This branch supersedes it with three small, separate conventional commits:
+  - `fix(sync): reject whitespace after scheme in URL validation`
+  - `fix(sync): compare existing Host rules case-insensitively`
+  - `fix(cf): url-encode Cloudflare API query parameters`
+- `bash -n hart-domain-sync.sh hart-domain-hook.sh` passes; `shellcheck` is not installed in this environment.
+- This run adds the final AGENTS.md status section and, on merge, closes PR #91 as superseded.
+- QA runs the verification gate:
+  - `bash -n hart-domain-sync.sh hart-domain-hook.sh`
+  - `shellcheck hart-domain-sync.sh hart-domain-hook.sh` (if installed)
+  - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, `--remove`, leading `*.`, and trailing DNS dots
+  - regression for the three fixes on this branch:
+    - existing Traefik routers with mixed-case `Host()` rules are detected as claimed and not duplicated
+    - Cloudflare `cf_upsert` GET queries with wildcard or special-character record/zone names are URL-encoded with `jq @uri`
+    - `HART_URL`/`SERVICE_URL` values with whitespace after the scheme (e.g. `http:// 127.0.0.1:8799`) are rejected or stripped to a valid `scheme://authority`
+  - regression for earlier merged fixes: RFC 3986 URL schemes, path/query stripping, trailing-slash handling, quote-aware YAML inline comment stripping, `rule_claimed()` backtick matching, hook stdin redirect, advisory `flock`, hart-fetched domain normalization, and locale-hardened helpers
+  - regression tests under a non-C locale (e.g. `LC_ALL=fr_FR.UTF-8`)
+- If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the objective is resolved, PR #91 is closed as superseded, and no further action is needed.
+
