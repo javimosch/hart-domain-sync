@@ -702,3 +702,39 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
   - regression tests under a non-C locale (e.g. `LC_ALL=fr_FR.UTF-8`)
 - If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the objective is resolved, PR #92 is closed as superseded, and no further action is needed.
 
+## 2026-08-19 final status and close stale PR #94 (am-add074-dkswadyb7yiu-9c3e3e44)
+
+- `gh issue list --state open` returns `[]`; all reported issues remain CLOSED. No open GitHub issues remain to fix.
+- `gh pr list --state open` returns only PR #94 (`am/am-add074-dksve8gfu8jv-26814583`, `docs(agents): add current run final status and close stale PRs #92 and #93 as superseded`). It is a stale, merge-conflicting docs-only PR from the previous run; the PRs it attempts to close (#92, a `fix(sync)` PR whose robustness fixes are already in `origin/master`, and #93, a `docs(agents)` final-status commit already merged on `origin/master`) are no longer open, so PR #94 is no longer needed.
+- The current branch `am-add074-dkswadyb7yiu-9c3e3e44` is at the same commit as `origin/master` (`5b65c30`) with a clean worktree. `bash -n hart-domain-sync.sh hart-domain-hook.sh` passes; `shellcheck` is not installed in this environment.
+- No dev code change is required to resolve the empty open issue list. This run lands a `docs(agents)` update to `AGENTS.md` recording the open PR status and the QA verification gate, with `Closes #94` in the commit body.
+- QA runs the final verification gate:
+  - `bash -n hart-domain-sync.sh hart-domain-hook.sh`
+  - `shellcheck hart-domain-sync.sh hart-domain-hook.sh` (if installed)
+  - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, `--remove`, leading `*.`, and trailing DNS dots
+  - regression for the latest merged fixes in `origin/master`:
+    - `HART_URL`/`SERVICE_URL` with a path or query are reduced to `scheme://authority` and still strip trailing slashes.
+    - the hook detaches from hart's stdin before nohup (`exec </dev/null`) and redirects the child's stdin to `/dev/null`.
+    - two overlapping `hart-domain-sync` invocations serialize via the advisory lock; the second logs and exits 0.
+  - regression for earlier merged fixes: path/query stripping of URLs, trailing-slash handling, RFC 3986 URL schemes, quote-aware YAML inline comment stripping, `rule_claimed()` backtick matching, hook log fallback to `/tmp`, hart-fetched domain normalization, and locale-hardened helpers
+  - regression tests under a non-C locale (e.g. `LC_ALL=fr_FR.UTF-8`)
+- If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the objective is resolved, PR #94 is closed as superseded, and no further action is needed.
+
+## 2026-08-19 architect plan and close stale PR #94 (am-add074-dkswadyb7yiu-9c3e3e44)
+
+- `gh issue list --state open` returns `[]`; all reported issues remain CLOSED. No open GitHub issues remain to fix.
+- `gh pr list --state open` returns only PR #94 (`am/am-add074-dksve8gfu8jv-26814583`, `docs(agents): add current run final status and close stale PRs #92 and #93 as superseded`). It is a stale, merge-conflicting docs-only PR from the previous run; the PRs it tries to close (#92 and #93) are already closed/merged on `origin/master` (commits `5b65c30`/#93 and earlier), so PR #94 is no longer needed.
+- The current branch `am-add074-dkswadyb7yiu-9c3e3e44` is at the same commit as `origin/master` (`5b65c30`) with a clean worktree. `bash -n hart-domain-sync.sh hart-domain-hook.sh` passes; `shellcheck` is not installed in this environment.
+- No dev code change is required to resolve the empty open issue list. This run lands a `docs(agents)` update to `AGENTS.md` recording the open PR status and the QA verification gate, with `Closes #94` in the commit body so the stale PR is closed on merge.
+- QA runs the final verification gate:
+  - `bash -n hart-domain-sync.sh hart-domain-hook.sh`
+  - `shellcheck hart-domain-sync.sh hart-domain-hook.sh` (if installed)
+  - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, `--remove`, leading `*.`, and trailing DNS dots
+  - regression for the latest merged fixes in `origin/master`:
+    - `HART_URL`/`SERVICE_URL` with a path or query are reduced to `scheme://authority` and still strip trailing slashes.
+    - the hook detaches from hart's stdin before nohup (`exec </dev/null`) and redirects the child's stdin to `/dev/null`.
+    - two overlapping `hart-domain-sync` invocations serialize via the advisory lock; the second logs `another hart-domain-sync is already running; skipping` and exits 0.
+  - regression for earlier merged fixes: RFC 3986 URL schemes, quote-aware YAML inline comment stripping, `rule_claimed()` backtick matching, hook log fallback to `/tmp`, hart-fetched domain normalization, and locale-hardened `cf_val()`/`slug()`/`regex_escape()`/provider detection
+  - regression tests under a non-C locale (e.g., `LC_ALL=fr_FR.UTF-8`)
+- If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the objective is resolved, PR #94 is closed as superseded, and no further action is needed.
+
