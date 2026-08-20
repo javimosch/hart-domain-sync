@@ -780,3 +780,23 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
 - This is a real, unmerged bug. Dev opened issue #99 and applied a `fix(sync)` change: the reconcile loop now checks `under_wildcard_instance()` before `under_wildcard()`, so external wildcards take precedence for their subdomains.
 - The fix was verified with `bash -n`, `shellcheck`, manual dry-runs in directory mode with mixed-case hart entries, nested `WILDCARD_DOMAIN`/`WILDCARD_INSTANCE_DOMAIN`, and `--remove`, plus a non-C locale regression run (`LC_ALL=en_US.UTF-8`).
 
+## 2026-08-20 architect plan and final status (am-add074-dktln1gdvh3e-7cc17424)
+
+- `gh issue list --state open` returns `[]`; all reported issues remain CLOSED. No open GitHub issues remain to fix.
+- `gh pr list --state open` returns only PR #101 (`am/am-add074-dktksepziikf-f1eeb8bf`, `docs(agents): add current run architect plan and final status`). It is a stale, merge-conflicting docs-only PR from the previous run and is fully superseded by the current branch and `origin/master` (commit `28b0f7e` / PR #100); all code fixes (including the `WILDCARD_INSTANCE_DOMAIN` child-precedence fix from issue #99) are already present in `origin/master`.
+- The current branch `am-add074-dktln1gdvh3e-7cc17424` is at the same commit as `origin/master` (`28b0f7e`) with a clean worktree. `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass in this environment.
+- No dev code change is required to resolve the empty open issue list. This run lands a `docs(agents)` update to `AGENTS.md` recording the open PR status and the QA verification gate, with `Closes #101` in the commit body.
+- QA runs the final verification gate:
+  - `bash -n hart-domain-sync.sh hart-domain-hook.sh`
+  - `shellcheck hart-domain-sync.sh hart-domain-hook.sh` (if installed)
+  - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, `--remove`, leading `*.`, trailing DNS dots, and nested `WILDCARD_INSTANCE_DOMAIN` child-of-`WILDCARD_DOMAIN` precedence
+  - regression for the latest merged fixes in `origin/master`:
+    - `HART_URL`/`SERVICE_URL` with a path, query, or multiple trailing slashes are reduced to `scheme://authority` and the bare-scheme guard rejects missing hosts.
+    - the hook detaches from hart's stdin before nohup (`exec </dev/null`) and redirects the child's stdin to `/dev/null`.
+    - two overlapping `hart-domain-sync` invocations serialize via the advisory lock; the second logs and exits 0.
+    - the reconcile loop checks `under_wildcard_instance()` before `under_wildcard()`, so an external wildcard child of a managed wildcard does not get swallowed.
+    - `rule_claimed()` and the Python rule scanners strip inline YAML comments quote-aware and compare rules case-insensitively.
+    - Cloudflare API query parameters are URL-encoded so wildcard or special-character zone/record names are not mangled.
+  - regression tests under a non-C locale (e.g., `LC_ALL=fr_FR.UTF-8`) for the locale-hardened code now in `origin/master`: `cf_val()` parsing with `export`/CRLF, `slug()` dot-to-dash, Traefik provider detection, `HART_URL`/`SERVICE_URL` trailing-slash and bare scheme handling, hook event lowercasing, `regex_escape()` dot escaping, mixed-case hart domains and wildcard inputs, and generated Traefik `Host()` / `HostRegexp()` rules and Cloudflare DNS targets lowercased
+- If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the objective is resolved, PR #101 is closed as superseded, and no further action is needed.
+
