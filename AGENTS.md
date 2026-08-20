@@ -780,3 +780,18 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
 - This is a real, unmerged bug. Dev opened issue #99 and applied a `fix(sync)` change: the reconcile loop now checks `under_wildcard_instance()` before `under_wildcard()`, so external wildcards take precedence for their subdomains.
 - The fix was verified with `bash -n`, `shellcheck`, manual dry-runs in directory mode with mixed-case hart entries, nested `WILDCARD_DOMAIN`/`WILDCARD_INSTANCE_DOMAIN`, and `--remove`, plus a non-C locale regression run (`LC_ALL=en_US.UTF-8`).
 
+## 2026-08-20 architect plan and final status (am-add074-dktksepziikf-f1eeb8bf)
+
+- `gh issue list --state open` returns `[]`; all reported issues (#1, #16, #17, #99) remain CLOSED. No open GitHub issues remain to fix.
+- `gh pr list --state open` returns `[]`; all stale/overlapping PRs are closed or merged. No open PRs remain.
+- The current branch `am-add074-dktksepziikf-f1eeb8bf` is at the same commit as `origin/master` (`28b0f7e`) with a clean worktree. `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass in this environment.
+- `origin/master` already contains the latest fix for issue #99: the reconcile loop checks `under_wildcard_instance()` before `under_wildcard()` so external wildcard subdomains take precedence over a parent managed wildcard.
+- No dev code change is required to resolve the empty open issue list. This run lands a `docs(agents)` update to `AGENTS.md` recording the open issue/PR status and the QA verification gate.
+- QA runs the final verification gate:
+  - `bash -n hart-domain-sync.sh hart-domain-hook.sh`
+  - `shellcheck hart-domain-sync.sh hart-domain-hook.sh`
+  - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN` (including a child-of-parent case), mixed-case hart entries, `--remove`, leading `*.`, and trailing DNS dots
+  - regression for the latest merged fixes in `origin/master`: path/query stripping of `HART_URL`/`SERVICE_URL`, the `WILDCARD_INSTANCE_DOMAIN` precedence over `WILDCARD_DOMAIN`, hook stdin redirect, and advisory `flock` serialization
+  - regression tests under a non-C locale (e.g., `LC_ALL=fr_FR.UTF-8`)
+- If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the objective is resolved and no further action is needed.
+
