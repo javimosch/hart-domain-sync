@@ -419,7 +419,7 @@ PYCLAIM
 # rule_claimed <domain> -> echoes the owning router name if the rule is taken
 rule_claimed() {
   local want want_lc r owner
-  want='Host(`'"$1"'`)'
+  want='Host(\`'"$1"'\`)'
   want_lc="$(lowercase "$want")"
   while IFS=$'\t' read -r r owner; do
     [ "$(lowercase "$r")" = "$want_lc" ] && { printf '%s' "$owner"; return 0; }
