@@ -795,3 +795,17 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
   - regression tests under a non-C locale (e.g., `LC_ALL=fr_FR.UTF-8`)
 - If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the objective is resolved and no further action is needed.
 
+## 2026-08-20 final status and close stale PR #102 (am-add074-dktmj73zrbq8-1f4ccc8c)
+
+- `gh issue list --state open` returns `[]`; all reported issues (#1, #16, #17, #99) remain CLOSED. No open GitHub issues remain to fix.
+- `gh pr list --state open` returns only PR #102 (`am/am-add074-dktln1gdvh3e-7cc17424`, `docs(agents): add current run architect plan and close stale PR #101 as superseded`). It is a stale, merge-conflicting docs-only PR from a previous run; the PR it attempts to close (#101, a `docs(agents)` PR already merged on `origin/master` at commit `6c5be69`) is no longer open, so PR #102 is no longer needed.
+- The current branch `am-add074-dktmj73zrbq8-1f4ccc8c` is at the same commit as `origin/master` (`6c5be69`) with a clean worktree. `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass in this environment.
+- No dev code change is required to resolve the empty open issue list. This run lands a `docs(agents)` update to `AGENTS.md` recording the open PR status and the QA verification gate, with `Closes #102` in the commit body.
+- QA runs the final verification gate:
+  - `bash -n hart-domain-sync.sh hart-domain-hook.sh`
+  - `shellcheck hart-domain-sync.sh hart-domain-hook.sh`
+  - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN` (including a child-of-parent case), mixed-case hart entries, `--remove`, leading `*.`, and trailing DNS dots
+  - regression for the latest merged fixes in `origin/master`: path/query stripping of `HART_URL`/`SERVICE_URL`, the `WILDCARD_INSTANCE_DOMAIN` precedence over `WILDCARD_DOMAIN`, hook stdin redirect, and advisory `flock` serialization
+  - regression tests under a non-C locale (e.g., `LC_ALL=fr_FR.UTF-8`)
+- If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the objective is resolved, PR #102 is closed as superseded, and no further action is needed.
+
