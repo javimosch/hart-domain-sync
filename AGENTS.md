@@ -910,3 +910,18 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
 - Dev pre-flight (am-add074-dkufeyispbrx-2a303b60): `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass in this environment.
 - If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the objective is resolved and no further action is needed.
 
+## 2026-08-21 architect plan and stale PR status (am-add074-dkuh2ok1rl6x-1198f53d)
+
+- `gh issue list --state open` returns `[]`; all reported issues (#1, #16, #17, #68, #69, #70, #82, #83, #84, #99, #104, #112) remain CLOSED. No open GitHub issues remain to fix.
+- `gh pr list --state open` returns only PR #115 (`am/am-add074-dkug824ahsfm-bf20ce17`, `docs(agents): add current run final status and close stale PR #114`). It is `mergeStateStatus: DIRTY` / `mergeable: CONFLICTING` and fully superseded by the current branch and `origin/master` (`acc81e6`): the PR it tries to close (#114, already MERGED on `origin/master` at commit `acc81e6`) is no longer open, and its `AGENTS.md` plan is stale. PR #115 is no longer needed.
+- The current branch `am-add074-dkuh2ok1rl6x-1198f53d` is at the same commit as `origin/master` (`acc81e6`) with a clean worktree. `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass in this environment.
+- No dev code change is required to resolve the empty open issue list. This run lands a `docs(agents)` update to `AGENTS.md` recording the open issue/PR status and the QA verification gate, with `Closes #115` in the commit body.
+- QA runs the final verification gate:
+  - `bash -n hart-domain-sync.sh hart-domain-hook.sh`
+  - `shellcheck hart-domain-sync.sh hart-domain-hook.sh`
+  - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN` (including a child-of-parent case), mixed-case hart entries, `--remove`, leading `*.`, and trailing DNS dots
+  - regression for the latest merged fixes in `origin/master`: `rule_claimed` backslash-escaped backtick matching, path/query stripping of `HART_URL`/`SERVICE_URL`, the `WILDCARD_INSTANCE_DOMAIN` precedence over `WILDCARD_DOMAIN`, hook stdin redirect, and advisory `flock` serialization
+  - regression tests under a non-C locale (e.g., `LC_ALL=fr_FR.UTF-8`)
+- Dev pre-flight (am-add074-dkuh2ok1rl6x-1198f53d): `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass in this environment.
+- If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the objective is resolved, PR #115 is closed as superseded, and no further action is needed.
+
