@@ -925,3 +925,20 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
 - Dev pre-flight (am-add074-dkuh2ok1rl6x-1198f53d): `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass in this environment.
 - If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the objective is resolved, PR #115 is closed as superseded, and no further action is needed.
 
+## 2026-08-21 final status and close stale PRs #117 and #118 (am-add074-dkujr5vm9v8i-878204b2)
+
+- `gh issue list --state open` returns `[]`; all reported issues (#1, #16, #17, #68, #69, #70, #82, #83, #84, #99, #104, #112) remain CLOSED. No open GitHub issues remain to fix.
+- `gh pr list --state open` returns PR #117 (`am/am-add074-dkuhyuox50af-655a33f6`, `docs(agents): add current run final status and close stale PRs #115 and #116`) and PR #118 (`am/am-add074-dkuiv00diohb-a501f5a0`, `docs(readme): list python3 as a runtime prerequisite`).
+  - PR #117 is a stale docs-only branch whose `AGENTS.md` plan is already superseded by `origin/master` (`acc81e6`/#114 and `a185010`/#113) and whose `README.md` change duplicates PR #118.
+  - PR #118 lists `python3` as a runtime prerequisite in `README.md`; this is a legitimate docs improvement because file-mode merge and fast-remove logic use inline Python.
+- The current branch `am-add074-dkujr5vm9v8i-878204b2` is at the same commit as `origin/master` (`2952501`) with a clean worktree. `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass in this environment.
+- No dev code change is required to resolve the empty open issue list. This run lands a `docs` update to `AGENTS.md` recording the open issue/PR status and the QA verification gate, plus a `README.md` update to list `python3` as a runtime prerequisite, with `Closes #117` and `Closes #118` in the commit body.
+- QA runs the final verification gate:
+  - `bash -n hart-domain-sync.sh hart-domain-hook.sh`
+  - `shellcheck hart-domain-sync.sh hart-domain-hook.sh`
+  - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN` (including a child-of-parent case), mixed-case hart entries, `--remove`, leading `*.`, and trailing DNS dots
+  - regression for the latest merged fixes in `origin/master`: `rule_claimed` backslash-escaped backtick matching, path/query stripping of `HART_URL`/`SERVICE_URL`, the `WILDCARD_INSTANCE_DOMAIN` precedence over `WILDCARD_DOMAIN`, hook stdin redirect, and advisory `flock` serialization
+  - regression tests under a non-C locale (e.g., `LC_ALL=fr_FR.UTF-8`)
+- Dev pre-flight (am-add074-dkujr5vm9v8i-878204b2): `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass in this environment.
+- If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the objective is resolved, PRs #117 and #118 are closed as superseded, and no further action is needed.
+
