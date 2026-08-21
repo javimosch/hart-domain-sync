@@ -13,7 +13,7 @@ Pure bash utility (curl + jq + python3) that reconciles hart custom domains into
 There is no configured test harness. Before any PR, run:
 - `bash -n hart-domain-sync.sh hart-domain-hook.sh`
 - `shellcheck hart-domain-sync.sh hart-domain-hook.sh` (if installed)
-- Manual dry-run in a temp `DEST` / `SINGLE_FILE` for directory or file mode.
+- Manual dry-run in a temp `DEST` / `SINGLE_FILE` for directory or file mode (file mode requires `python3` on PATH).
 
 ## Current objective context
 GitHub issue #1 is CLOSED and its implementation (fast `HART_DOMAIN_HOOK remove` cleanup + `WILDCARD_INSTANCE_DOMAIN` support) is already on `origin/master`.
@@ -939,4 +939,19 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
   - regression tests under a non-C locale (e.g., `LC_ALL=fr_FR.UTF-8`)
 - Dev pre-flight (am-add074-dkuiv00diohb-a501f5a0): `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass in this environment.
 - If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the objective is resolved, PR #117 is closed as superseded, and no further action is needed.
+
+## 2026-08-21 final status and close stale PR #119 (am-add074-dkukiq9njqej-bbba2dec)
+
+- `gh issue list --state open` returns `[]`; all reported issues (#1, #16, #17, #68, #69, #70, #82, #83, #84, #99, #104, #112) remain CLOSED. No open GitHub issues remain to fix.
+- `gh pr list --state open` returns only PR #119 (`am/am-add074-dkujr5vm9v8i-878204b2`, `docs: add current run final status and list python3 as a runtime prerequisite`). It is `mergeStateStatus: DIRTY` / `mergeable: CONFLICTING` and fully superseded by the current branch and `origin/master` (`da22661`): the `README.md` python3 prerequisite it tries to add is already merged (`da22661` / #118), and its `AGENTS.md` plan is stale. PR #119 is no longer needed.
+- The current branch `am-add074-dkukiq9njqej-bbba2dec` is at `origin/master` (`da22661`) with a clean worktree. `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass in this environment.
+- No dev code change is required to resolve the empty open issue list. This run lands a `docs(readme)` clarification adding the inline-Python rationale to the `python3` prerequisite and a `docs(agents)` update to `AGENTS.md` recording the open issue/PR status and the QA verification gate, with `Closes #119` in the commit body.
+- QA runs the final verification gate:
+  - `bash -n hart-domain-sync.sh hart-domain-hook.sh`
+  - `shellcheck hart-domain-sync.sh hart-domain-hook.sh`
+  - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN` (including a child-of-parent case), mixed-case hart entries, `--remove`, leading `*.`, and trailing DNS dots
+  - regression for the latest merged fixes in `origin/master`: `rule_claimed` backslash-escaped backtick matching, path/query stripping of `HART_URL`/`SERVICE_URL`, the `WILDCARD_INSTANCE_DOMAIN` precedence over `WILDCARD_DOMAIN`, hook stdin redirect, and advisory `flock` serialization
+  - regression tests under a non-C locale (e.g., `LC_ALL=fr_FR.UTF-8`)
+- Dev pre-flight (am-add074-dkukiq9njqej-bbba2dec): `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass in this environment.
+- If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the objective is resolved, PR #119 is closed as superseded, and no further action is needed.
 
