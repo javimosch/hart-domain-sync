@@ -13,7 +13,7 @@ Pure bash utility (curl + jq + python3) that reconciles hart custom domains into
 There is no configured test harness. Before any PR, run:
 - `bash -n hart-domain-sync.sh hart-domain-hook.sh`
 - `shellcheck hart-domain-sync.sh hart-domain-hook.sh` (if installed)
-- Manual dry-run in a temp `DEST` / `SINGLE_FILE` for directory or file mode.
+- Manual dry-run in a temp `DEST` / `SINGLE_FILE` for directory or file mode (file mode requires `python3` on PATH).
 
 ## Current objective context
 GitHub issue #1 is CLOSED and its implementation (fast `HART_DOMAIN_HOOK remove` cleanup + `WILDCARD_INSTANCE_DOMAIN` support) is already on `origin/master`.
