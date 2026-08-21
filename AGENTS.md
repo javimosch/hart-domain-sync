@@ -976,5 +976,8 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
 - `bash -n hart-domain-sync.sh hart-domain-hook.sh` passes.
 - `shellcheck hart-domain-sync.sh hart-domain-hook.sh` passes in this environment.
 - Directory-mode dry-run with mixed-case hart entries (`Foo.example.com`), nested `WILDCARD_DOMAIN=example.com` and `WILDCARD_INSTANCE_DOMAIN=ext.example.com`, leading `*.` (`*.example.com.`), and trailing DNS dots (`baz.test.example.com.`) produced the expected wildcard and per-domain files and preserved the foreign `Host(\`claimed.example.com\`)` router.
-- File-mode, `--remove`, and non-C locale regression dry-runs are in progress.
+- File-mode dry-run merged hart routers into the single dynamic file while preserving the foreign `Host(\`claimed.example.com\`)` router and dropping the stale `hart-old-router` entry.
+- Fast `--remove example.com` removed the per-domain `hart-example-com.yml` in directory mode and the stale inert file path in file mode.
+- `hart-domain-hook.sh remove ""` rejected the empty domain and `remove "example.com"` dispatched a background fast remove.
+- Regression under `LC_ALL=fr_FR.UTF-8` passed; no locale-dependent regex or tr failures were observed.
 
