@@ -955,3 +955,17 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
 - Dev pre-flight (am-add074-dkukiq9njqej-bbba2dec): `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass in this environment.
 - If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the objective is resolved, PR #119 is closed as superseded, and no further action is needed.
 
+## 2026-08-21 architect plan and close stale PR #121 (am-add074-dkunx88g2dmb-9f40bb2d)
+
+- `gh issue list --state open` returns `[]`; all reported issues (#1, #16, #17, #68, #69, #70, #82, #83, #84, #99, #104, #112) remain CLOSED. No open GitHub issues remain to fix.
+- `gh pr list --state open` returns only PR #121 (`am/am-add074-dkun128x5xi7-f1624d1f`, `docs(agents): add current run architect plan and final status`). It is a stale docs-only PR from the previous run; its `AGENTS.md` plan is now superseded by the current branch and `origin/master` (`0ee8d4d`), and it does not close any remaining open issue. PR #121 is no longer needed.
+- The current branch `am/am-add074-dkunx88g2dmb-9f40bb2d` is at the same commit as `origin/master` (`0ee8d4d`) with a clean worktree. `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass in this environment.
+- No dev code change is required to resolve the empty open issue list. This run lands a `docs(agents)` update to `AGENTS.md` recording the open issue/PR status and the QA verification gate, with `Closes #121` in the commit body.
+- QA runs the final verification gate:
+  - `bash -n hart-domain-sync.sh hart-domain-hook.sh`
+  - `shellcheck hart-domain-sync.sh hart-domain-hook.sh`
+  - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN` (including a child-of-parent case), mixed-case hart entries, `--remove`, leading `*.`, and trailing DNS dots
+  - regression for the latest merged fixes in `origin/master`: `rule_claimed` backslash-escaped backtick matching, path/query stripping of `HART_URL`/`SERVICE_URL`, the `WILDCARD_INSTANCE_DOMAIN` precedence over `WILDCARD_DOMAIN`, hook stdin redirect, and advisory `flock` serialization
+  - regression tests under a non-C locale (e.g., `LC_ALL=fr_FR.UTF-8`)
+- If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the objective is resolved, PR #121 is closed as superseded, and no further action is needed.
+
