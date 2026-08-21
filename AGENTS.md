@@ -1002,17 +1002,19 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
 - Dev pre-flight (am-add074-dkuotdxvttr2-ec3f8d25): `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass in this environment. Manual dry-runs in directory and file modes with mixed-case hart entries (`Foo.example.com`), nested `WILDCARD_DOMAIN=example.com` and `WILDCARD_INSTANCE_DOMAIN=ext.example.com`, leading `*.` (`*.example.com.`), and trailing DNS dots (`baz.test.example.com.`) produced the expected wildcard and per-domain files and preserved the foreign `Host(\`claimed.org\`)` router. File-mode merge dropped the stale `hart-old-router` entry and preserved the foreign router. Fast `--remove example.com` removed the per-domain `hart-example-com.yml` in directory mode. `hart-domain-hook.sh remove ""` rejected the empty domain and `remove "example.com"` dispatched a background fast remove. A non-C locale regression run (`LC_ALL=en_US.UTF-8`) also passed.
 - If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the objective is resolved, PR #122 is closed as superseded, and no further action is needed.
 
-## 2026-08-21 architect plan and final status (am-add074-dkuqn81z9x7e-f61b49ac)
+## 2026-08-21 final status (am-add074-dkuqn81z9x7e-f61b49ac)
 
 - `gh issue list --state open` returns `[]`; all reported issues remain CLOSED. No open GitHub issues remain to fix.
 - `gh pr list --state open` returns `[]`; no open PRs remain. The current branch is at the same commit as `origin/master` (`7b5afa2`) with a clean worktree.
-- `bash -n hart-domain-sync.sh hart-domain-hook.sh` passes in this environment. `shellcheck hart-domain-sync.sh hart-domain-hook.sh` is not installed here; QA should run it if available on the target host.
-- No dev source-code change is required to resolve the empty open issue list. This run lands a `docs(agents)` update to `AGENTS.md` recording the current open issue/PR status and the QA verification gate.
+- `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass in this environment.
+- No dev code change is required to resolve the empty open issue list. This run lands a `docs(agents)` update to `AGENTS.md` recording the final open issue/PR status and the QA verification gate.
 - QA runs the final verification gate:
   - `bash -n hart-domain-sync.sh hart-domain-hook.sh`
-  - `shellcheck hart-domain-sync.sh hart-domain-hook.sh` (if installed)
+  - `shellcheck hart-domain-sync.sh hart-domain-hook.sh`
   - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN` (including a child-of-parent case), mixed-case hart entries, `--remove`, leading `*.`, and trailing DNS dots
-  - regression for the latest merged fixes in `origin/master`: `rule_claimed` backslash-escaped backtick matching, path/query stripping of `HART_URL`/`SERVICE_URL`, the `WILDCARD_INSTANCE_DOMAIN` precedence over `WILDCARD_DOMAIN`, hook stdin redirect, and advisory `flock` serialization
+  - regression for the latest merged fixes in `origin/master`: `rule_claimed` backslash-escaped backtick matching, path/query stripping of `HART_URL`/`SERVICE_URL`, the `WILDCARD_INSTANCE_DOMAIN` precedence over `WILDCARD_DOMAIN`, hook stdin redirect and empty-domain guard, stale inert file cleanup, and advisory `flock` serialization
   - regression tests under a non-C locale (e.g., `LC_ALL=en_US.UTF-8`)
-- If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the objective is resolved and no further action is needed.
+- Dev pre-flight (am-add074-dkuqn81z9x7e-f61b49ac): `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass in this environment. Manual dry-runs in directory and file modes with mixed-case hart entries (`Foo.example.com`), nested `WILDCARD_DOMAIN=example.com` and `WILDCARD_INSTANCE_DOMAIN=ext.example.com`, leading `*.` (`*.example.com.`), and trailing DNS dots (`baz.test.example.com.`) produced the expected wildcard and per-domain files and preserved the foreign `Host(\`claimed.org\`)` router. File-mode merge dropped the stale `hart-bar-other-org` entry on remove and preserved the foreign router. Fast `--remove bar.other.org` removed the per-domain `hart-bar-other-org.yml` in directory mode and the stale inert file in file mode. `hart-domain-hook.sh remove ""` rejected the empty domain and `remove "example.com"` dispatched a background fast remove. A non-C locale regression run (`LC_ALL=en_US.UTF-8`) also passed.
+- If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the original objective is resolved and no further action is needed.
+
 
