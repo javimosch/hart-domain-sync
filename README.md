@@ -108,7 +108,7 @@ whitespace-only after trimming (including a path padded with trailing spaces or 
 - **Cloudflare global key** in `$CF_ENV` as `CF_API_EMAIL` + `CF_API_KEY` (the same file Traefik's
   DNS challenge uses, if you have one).
 - **Passwordless sudo** for the runner user (only used to `systemctl restart traefik` on new domains).
-- `curl` + `jq` on the host. Traefik cert resolver reachable (HTTP-01 works for arbitrary domains
+- `curl`, `jq`, and `python3` on the host. Traefik cert resolver reachable (HTTP-01 works for arbitrary domains
   once DNS points at the box).
 
 ## Install
