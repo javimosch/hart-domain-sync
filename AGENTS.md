@@ -910,3 +910,34 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
 - Dev pre-flight (am-add074-dkufeyispbrx-2a303b60): `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass in this environment.
 - If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the objective is resolved and no further action is needed.
 
+## 2026-08-21 final status and close stale PRs #115 and #116 (am-add074-dkuhyuox50af-655a33f6)
+
+- `gh issue list --state open` returns `[]`; all reported issues remain CLOSED. No open GitHub issues remain to fix.
+- `gh pr list --state open` returns two stale `docs(agents)` branches:
+  - PR #115 (`am/am-add074-dkug824ahsfm-bf20ce17`, `docs(agents): add current run final status and close stale PR #114`) is `mergeStateStatus: DIRTY` / `mergeable: CONFLICTING` and references PR #114, which is already merged on `origin/master` (`acc81e6`).
+  - PR #116 (`am/am-add074-dkuh2ok1rl6x-1198f53d`, `docs(agents): add current run architect plan and close stale PR #115`) is `mergeable: MERGEABLE` but only adds a plan to close the already-stale PR #115.
+- The current branch `am-add074-dkuhyuox50af-655a33f6` is at the same commit as `origin/master` (`acc81e6`) with a clean worktree. `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass in this environment.
+- No dev source-code change is required to resolve the empty open issue list. This run lands a `docs(agents)` update to `AGENTS.md` recording the open issue/PR status, the QA verification gate, and the pre-flight results, with `Closes #115` and `Closes #116` in the commit body.
+- QA runs the final verification gate:
+  - `bash -n hart-domain-sync.sh hart-domain-hook.sh`
+  - `shellcheck hart-domain-sync.sh hart-domain-hook.sh`
+  - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN` (including a child-of-parent case), mixed-case hart entries, `--remove`, leading `*.`, and trailing DNS dots
+  - regression for the latest merged fixes in `origin/master`: `rule_claimed` backslash-escaped backtick matching, path/query stripping of `HART_URL`/`SERVICE_URL`, the `WILDCARD_INSTANCE_DOMAIN` precedence over `WILDCARD_DOMAIN`, hook stdin redirect, and advisory `flock` serialization
+  - regression tests under a non-C locale (e.g., `LC_ALL=fr_FR.UTF-8`)
+- Dev pre-flight (am-add074-dkuhyuox50af-655a33f6): `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass in this environment.
+- If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the objective is resolved and PRs #115 and #116 are closed as superseded, with no further action needed.
+
+## 2026-08-21 final status and close stale PRs #115 and #116 (am-add074-dkuhyuox50af-655a33f6)
+
+- `gh issue list --state open` returns `[]`; all reported issues (#1, #16, #17, #68, #69, #70, #82, #83, #84, #99, #104, #112) remain CLOSED. No open GitHub issues remain to fix.
+- `gh pr list --state open` returns PR #115 (`am/am-add074-dkug824ahsfm-bf20ce17`, `docs(agents): add current run final status and close stale PR #114`) and PR #116 (`am/am-add074-dkuh2ok1rl6x-1198f53d`, `docs(agents): add current run architect plan and close stale PR #115`). Both are stale, merge-conflicting docs-only PRs from previous runs; the PRs they attempt to close (#114 and #115) are already closed/merged on `origin/master` (`acc81e6`), and their `AGENTS.md` plans are stale. They should be closed as superseded by this run's clean `docs(agents)` update.
+- The current branch `am/am-add074-dkuhyuox50af-655a33f6` is at the same commit as `origin/master` (`acc81e6`) with a clean worktree. `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass in this environment.
+- No dev code change is required to resolve the empty open issue list. This run lands a `docs(agents)` update to `AGENTS.md` recording the open issue/PR status and the QA verification gate, with `Closes #115, closes #116` in the commit body.
+- QA runs the final verification gate:
+  - `bash -n hart-domain-sync.sh hart-domain-hook.sh`
+  - `shellcheck hart-domain-sync.sh hart-domain-hook.sh` (if installed)
+  - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN` (including a child-of-parent case), mixed-case hart entries, `--remove`, leading `*.`, and trailing DNS dots
+  - regression for the latest merged fixes in `origin/master`: `rule_claimed` backslash-escaped backtick matching, path/query stripping of `HART_URL`/`SERVICE_URL`, the `WILDCARD_INSTANCE_DOMAIN` precedence over `WILDCARD_DOMAIN`, hook stdin redirect, and advisory `flock` serialization
+  - regression tests under a non-C locale (e.g., `LC_ALL=fr_FR.UTF-8`)
+- If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the objective is resolved, PRs #115 and #116 are closed as superseded, and no further action is needed.
+
