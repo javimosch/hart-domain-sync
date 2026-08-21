@@ -970,3 +970,11 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
 - Dev pre-flight (am-add074-dkun128x5xi7-f1624d1f): `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass in this environment.
 - If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the objective is resolved and no further action is needed.
 
+## 2026-08-21 dev verification log (am-add074-dkun128x5xi7-f1624d1f)
+
+- `gh issue list --state open` returned `[]` and `gh pr list --state open` returned `[]` in this run.
+- `bash -n hart-domain-sync.sh hart-domain-hook.sh` passes.
+- `shellcheck hart-domain-sync.sh hart-domain-hook.sh` passes in this environment.
+- Directory-mode dry-run with mixed-case hart entries (`Foo.example.com`), nested `WILDCARD_DOMAIN=example.com` and `WILDCARD_INSTANCE_DOMAIN=ext.example.com`, leading `*.` (`*.example.com.`), and trailing DNS dots (`baz.test.example.com.`) produced the expected wildcard and per-domain files and preserved the foreign `Host(\`claimed.example.com\`)` router.
+- File-mode, `--remove`, and non-C locale regression dry-runs are in progress.
+
