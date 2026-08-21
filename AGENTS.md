@@ -981,3 +981,9 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
 - `hart-domain-hook.sh remove ""` rejected the empty domain and `remove "example.com"` dispatched a background fast remove.
 - Regression under `LC_ALL=fr_FR.UTF-8` passed; no locale-dependent regex or tr failures were observed.
 
+## 2026-08-21 final status (am-add074-dkun128x5xi7-f1624d1f)
+
+- All dev and QA verification steps in this run passed: `bash -n`, `shellcheck`, directory/file mode manual dry-runs, fast `--remove`, `hart-domain-hook` remove validation, and non-C locale regression.
+- `gh issue list --state open` and `gh pr list --state open` both remain empty.
+- The original objective is resolved; no further source-code change is required for this run.
+
