@@ -1075,4 +1075,11 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
 - This run lands a `docs(agents)` update to `AGENTS.md` recording the open PR status and closes PR #126 as superseded.
 - Closes #126
 
+## 2026-08-22 final status (am-add074-dkvcmxc6o9o6-e153ca83)
+
+- QA re-review after `git fetch origin master` found the `fix(sync): fail fast on hart API HTTP errors with curl -f` change already merged into `origin/master` (`3fe0c20`) via PR #127.
+- `gh issue list --state open` and `gh pr list --state open` both remain empty; the original objective is resolved.
+- The duplicate commits on this branch were dropped with `git reset --hard origin/master`.
+- This run lands a fresh `docs(agents)` final-status entry only; no further source-code change is required.
+
 
