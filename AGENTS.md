@@ -1102,3 +1102,15 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
 - Manual dry-runs in file and directory modes with mixed-case hart entries, uppercase `WILDCARD_DOMAIN`/`WILDCARD_INSTANCE_DOMAIN`, leading `*.`, trailing DNS dots, and `LC_ALL=en_US.UTF-8` produced the expected wildcard/per-domain files, correct foreign section preservation, a clean merged single-file output, and a fast `--remove` that left non-http sections untouched and dropped a bare `http:` block when the removed hart key was the last one.
 - The objective is resolved; PRs #132 and #133 are superseded by this branch.
 
+## 2026-08-22 final status and close stale PRs #132/#135/#136 (am-add074-dkvl24vrvjc1-8476068a)
+
+- `gh issue list --state open` returns `[]`; no open GitHub issues remain to fix.
+- `gh pr list --state open` returns PR #132 (`am/am-add074-dkvgpxqaqkw2-3b784682`, bundled non-http top-level merge fix + stale AGENTS.md plan), PR #135 (`am/am-add074-dkvj9thixuxb-df3a37a9`, bundled fast-remove empty-http fix + README note + stale AGENTS.md plan), and PR #136 (`am/am-add074-dkvk5z27f2wu-bb19efa5`, README note + stale AGENTS.md plan). The code in all three is already on `origin/master` (`96ee24f`) or has now been re-landed as clean `docs(readme)` notes on this branch.
+- The current branch `am-add074-dkvl24vrvjc1-8476068a` is at `origin/master` (`96ee24f`) with two `docs(readme)` improvements:
+  - `docs(readme): note file-mode non-http preservation and empty http cleanup` — explains that foreign `tcp:`, `udp:`, and other top-level sections are preserved byte-identical, and that fast `--remove` drops a bare `http:` block once the last `hart-*` key is gone.
+  - `docs(readme): note fast remove also cleans inert per-domain files` — notes that a file-mode fast `--remove` also deletes the stale per-domain yml from the watched directory so hook-driven removals stay complete.
+- `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass.
+- Manual dry-runs in directory and file modes with mixed-case hart entries (`Foo.Example.com`), uppercase `WILDCARD_DOMAIN=Example.com`, and a `tcp:` top-level section produced the expected per-domain file and merged single-file output with the foreign section preserved.
+- The objective is resolved; PRs #132, #135, and #136 are superseded by this branch.
+- Closes #132, #135, #136
+

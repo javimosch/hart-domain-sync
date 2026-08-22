@@ -44,13 +44,18 @@ self-signed default, with nothing in the logs to say why. So the mode is detecte
 In **file mode** the per-domain files are staged in a tmpdir and only `hart-*` keys are folded
 into the single file. Any of our old files left in `$DEST` from a previous directory-mode run are
 removed, since a `filename:` Traefik never reads them — they are inert but look exactly like live
-config to whoever debugs the next routing problem.
+config to whoever debugs the next routing problem. Fast `--remove` in file mode also deletes the
+inert per-domain file from `$DEST`, so the cleanup stays complete even when a hook fires before the
+next full reconcile.
 
 In **file mode** the single file is usually shared with whatever else manages it. The merge therefore
 replaces only `hart-*` keys and carries every other entry through byte-identical — it splices text
-rather than round-tripping the YAML, so comments and other tools' formatting survive. Writes are
-atomic (temp file + rename), so Traefik never sees a half-written file, and the merge is a fixpoint,
-so steady-state runs change nothing and trigger no reload.
+rather than round-tripping the YAML, so comments and other tools' formatting survive. Foreign
+`tcp:`, `udp:`, and any other top-level sections are preserved byte-identical and are never folded
+under `http:`. Writes are atomic (temp file + rename), so Traefik never sees a half-written file,
+and the merge is a fixpoint, so steady-state runs change nothing and trigger no reload. Fast
+`--remove` also drops a bare `http:` block once the last `hart-*` key is removed, so a file with
+only foreign `tcp:`/`udp:` sections stays clean.
 
 **A host already routed by someone else is left alone.** Before writing a router, the reconciler
 checks the `Host()` rules already claimed by routers it does not own (in the shared file, or in
