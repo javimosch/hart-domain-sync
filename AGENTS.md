@@ -1082,15 +1082,11 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
 - The duplicate commits on this branch were dropped with `git reset --hard origin/master`.
 - This run lands a fresh `docs(agents)` final-status entry only; no further source-code change is required.
 
-## 2026-08-22 final status and close stale PR #129 (am-add074-dkvf0ojd96nm-4c9ac6a2)
+## 2026-08-22 final status (am-add074-dkvftrwz1z5t-d0424789)
 
 - `gh issue list --state open` returns `[]`; no open GitHub issues remain to fix.
-- `gh pr list --state open` returned PR #129 (`am/am-add074-dkve7kw63lz3-8701b514`, `docs(agents): add 2026-08-22 architect plan for current branch`). It bundled a stale `AGENTS.md` plan with one real unmerged `hart-domain-sync.sh` fix and is now closed as superseded.
-- Re-landed the unmerged URL validation fix on this branch as a clean `fix(sync): strengthen URL validation to reject whitespace and bare scheme` commit.
-- Added two related hardening commits:
-  - `fix(sync): create router temp files in the destination directory`
-  - `fix(sync): clarify URL validation error messages`
-- Verification: `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass.
-- Closes #129
-
+- `gh pr list --state open` returned only PR #130 (`am/am-add074-dkvf0ojd96nm-4c9ac6a2`, `fix(sync): strengthen URL validation to reject whitespace and bare scheme`). It was merged into `origin/master` (`8ba253d`) while this branch was being prepared, so the URL validation hardening is already present on `origin/master`.
+- `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass.
+- Manual dry-runs in directory and file modes with mixed-case hart entries (`Foo.Ext.example.com`, `bar.example.com`), uppercase `WILDCARD_DOMAIN=Example.com` and `WILDCARD_INSTANCE_DOMAIN=Ext.example.com`, bare schemes (`http://`), whitespace-embedded URLs, multiple trailing slashes, and fast `--remove` produced the expected validation failures, per-domain/wildcard router files, and merged single-file output. The empty-domain guard in `hart-domain-hook.sh` also passed.
+- The original objective is resolved; this branch records a fresh `docs(agents)` final-status entry only.
 
