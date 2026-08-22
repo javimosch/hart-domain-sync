@@ -536,7 +536,7 @@ for d in "${DOMAINS[@]}"; do
   fi
 
   existed=0; [ -e "$f" ] && existed=1
-  tmp="$(mktemp)"
+  tmp="$(mktemp "$DEST/.hart-XXXXXX")" || { log "cannot create temp file in $DEST"; exit 1; }
   cat > "$tmp" <<YAML
 # managed by hart-domain-sync — regenerated, do not edit. domain: $d
 http:
@@ -564,7 +564,7 @@ if [ -n "$WILDCARD_DOMAIN" ] && [ "$NEEDS_WILDCARD" = "1" ]; then
   wf="$DEST/$WILDCARD_FILE"
   REGEX="$(regex_escape "$WILDCARD_DOMAIN")"
   existed=0; [ -e "$wf" ] && existed=1
-  tmp="$(mktemp)"
+  tmp="$(mktemp "$DEST/.hart-XXXXXX")" || { log "cannot create temp file in $DEST"; exit 1; }
   cat > "$tmp" <<YAML
 # managed by hart-domain-sync — wildcard router for *.$WILDCARD_DOMAIN
 http:
