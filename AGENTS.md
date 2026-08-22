@@ -1049,4 +1049,16 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
 - `gh issue list --state open` and `gh pr list --state open` both remain empty.
 - The original objective is resolved; no further source-code change is required for this run.
 
+## 2026-08-22 final status and close stale PR #126 (am-add074-dkvbtu1whrrt-7295f08e)
+
+- `gh issue list --state open` returns `[]`; no open GitHub issues remain to fix.
+- `gh pr list --state open` returns only PR #126 (`am/am-add074-dkvaxo8w787c-07921608`, `docs(agents): add 2026-08-22 architect plan and final status`). It is `mergeStateStatus: CLEAN` but superseded by this run: its `cf()` `curl -f` improvement is re-landed as a clean `fix(cf)` commit, and its stale `AGENTS.md` plan is replaced by this final-status entry.
+- The current branch `am-add074-dkvbtu1whrrt-7295f08e` is at `origin/master` (`3840611`) with two additional defensive commits:
+  - `fix(cf): pass curl -f to fail fast on Cloudflare HTTP errors`
+  - `fix(sync): fail fast on hart API HTTP errors with curl -f`
+- `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass in this environment.
+- Manual dry-runs in directory and file modes with mixed-case hart entries (`Foo.Example.com`, `Bar.Ext.example.com.`, `baz.test.example.com.`), uppercase `WILDCARD_DOMAIN=Example.com` and `WILDCARD_INSTANCE_DOMAIN=Ext.example.com`, leading `*.`, trailing DNS dots, and fast `--remove` produced the expected wildcard and per-domain files and the merged single-file output. A non-C locale regression run (`LC_ALL=en_US.UTF-8`) also passed.
+- This run lands a `docs(agents)` update to `AGENTS.md` recording the open PR status and closes PR #126 as superseded.
+- Closes #126
+
 
