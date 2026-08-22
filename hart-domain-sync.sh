@@ -241,7 +241,7 @@ fast_remove() { # fast_remove <domain>: delete the per-domain router without fet
     [ -w "$SINGLE_FILE" ] || [ -w "$(dirname "$SINGLE_FILE")" ] \
       || { log "cannot write $SINGLE_FILE — abort"; exit 1; }
     changed=$(TARGET="$SINGLE_FILE" PREFIX="$PREFIX" KEY="$key" python3 - <<'PYREM'
-import os, sys, tempfile
+import os, re, sys, tempfile
 target, key = os.environ["TARGET"], os.environ["KEY"]
 try:
     text = open(target).read()
@@ -273,7 +273,24 @@ for line in text.split("\n"):
         out.append(line)
 if not changed:
     print("0"); sys.exit(0)
-out = "\n".join(out)
+# Remove an empty http: block if no 4-space keys remain under any of its sections;
+# otherwise a fast remove of the last hart key leaves http: with bare routers:/services:.
+cleaned, i, n = [], 0, len(out)
+while i < n:
+    if out[i] == "http:":
+        start = i
+        i += 1
+        has_key = False
+        while i < n and (out[i] == "" or out[i].startswith(" ") or out[i].startswith("\t")):
+            if re.match(r"^    [\w.-]+:\s*$", out[i]):
+                has_key = True
+            i += 1
+        if has_key:
+            cleaned.extend(out[start:i])
+        continue
+    cleaned.append(out[i])
+    i += 1
+out = "\n".join(cleaned)
 d = os.path.dirname(target) or "."
 fd, tmp = tempfile.mkstemp(dir=d, prefix=".hart-remove.")
 with os.fdopen(fd, "w") as fh: fh.write(out)
