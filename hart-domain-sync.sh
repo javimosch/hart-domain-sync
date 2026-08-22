@@ -664,13 +664,15 @@ def split_http(text):
     return out, rest
 
 def render(sections, rest):
-    parts = ["http:\n"]
-    for sec in SECTIONS:
-        blocks = sections.get(sec) or {}
-        if not blocks: continue
-        parts.append("  %s:\n" % sec)
-        for name in sorted(blocks):                       # sorted => stable bytes
-            parts.append(blocks[name].rstrip("\n") + "\n\n")
+    parts = []
+    if any(sections.get(sec) for sec in SECTIONS):
+        parts.append("http:\n")
+        for sec in SECTIONS:
+            blocks = sections.get(sec) or {}
+            if not blocks: continue
+            parts.append("  %s:\n" % sec)
+            for name in sorted(blocks):                       # sorted => stable bytes
+                parts.append(blocks[name].rstrip("\n") + "\n\n")
     for name, block in rest:
         parts.append(block.rstrip("\n") + "\n\n")
     return "".join(parts)
