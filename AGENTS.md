@@ -1032,4 +1032,21 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
   - regression tests under a non-C locale (e.g., `LC_ALL=en_US.UTF-8`)
 - If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the objective is resolved and no further action is needed.
 
+## 2026-08-22 dev verification log (am-add074-dkva1ivxhk3b-c00cb3a1)
+
+- `gh issue list --state open` returned `[]` and `gh pr list --state open` returned `[]` in this run.
+- `bash -n hart-domain-sync.sh hart-domain-hook.sh` passes.
+- `shellcheck hart-domain-sync.sh hart-domain-hook.sh` passes in this environment.
+- Directory-mode dry-run with `LC_ALL=en_US.UTF-8` and mixed-case hart entries (`Foo.Example.com`, `Bar.Ext.example.com.`, `a.test.example.com`, `claimed.org`, `new.org`), uppercase `WILDCARD_DOMAIN=Example.com` and `WILDCARD_INSTANCE_DOMAIN=Ext.example.com`, plus a trailing DNS dot on `Bar.Ext.example.com.`, produced the expected `hart-example-com-wildcard.yml` router, skipped `bar.ext.example.com` under the instance wildcard, and wrote per-domain files for `claimed.org` and `new.org`.
+- File-mode dry-run merged hart routers into the single dynamic file while preserving the foreign `Host(`claimed.org`)` router (literal backticks, matching the generated per-domain rule) and dropping stale `hart-` keys no longer in the desired set.
+- Fast `--remove claimed.org` removed the per-domain `hart-claimed-org.yml` in directory mode.
+- `hart-domain-hook.sh remove ""` rejected the empty domain; `hart-domain-hook.sh remove "claimed.org"` dispatched a background fast remove.
+- A non-C locale regression run (`LC_ALL=en_US.UTF-8`) also passed; no locale-dependent `grep`, `sed`, `tr`, or `awk` failures were observed.
+
+## 2026-08-22 final status (am-add074-dkva1ivxhk3b-c00cb3a1)
+
+- All dev and QA verification steps in this run passed: `bash -n`, `shellcheck`, directory- and file-mode manual dry-runs, fast `--remove`, `hart-domain-hook` empty-domain guard, and non-C locale regression.
+- `gh issue list --state open` and `gh pr list --state open` both remain empty.
+- The original objective is resolved; no further source-code change is required for this run.
+
 
