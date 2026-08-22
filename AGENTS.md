@@ -1094,10 +1094,11 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
 
 - `gh issue list --state open` returns `[]`; no open GitHub issues remain to fix.
 - `gh pr list --state open` returns PR #132 (`am/am-add074-dkvgpxqaqkw2-3b784682`, docs bundled with a stale AGENTS.md plan and the non-http top-level merge fix) and PR #133 (`am/am-add074-dkvhkk7icwci-f213ebee`, the same non-http top-level merge fix plus a fast-remove top-section fix). Both are stale and superseded by this run.
-- The current branch `am/am-add074-dkvidnovtlxa-3fd42d32` is at `origin/master` (`fafe55a`) plus two clean `fix(sync)` commits:
+- The current branch `am/am-add074-dkvidnovtlxa-3fd42d32` is at `origin/master` (`fafe55a`) plus three clean `fix(sync)` commits:
   - `fix(sync): only remove hart keys from http section in fast remove` — track the top-level `http:` section in the fast-remove Python helper so a removal never deletes a router of the same name that lives under a non-http top-level section (e.g. `tcp:`).
-  - `fix(sync): preserve non-http top-level sections in file mode merge` — keep `tcp:`, `udp:`, and any other foreign top-level sections byte-identical when folding staged hart routers into the single dynamic file.
+  - `fix(sync): preserve non-http top-level sections in file mode merge` — keep `tcp:`, `udp:`, and any other foreign top-level sections byte-identical when folding staged hart routers into the single dynamic file; only emit `http:` if it contains real router/service/middleware keys.
+  - `fix(sync): avoid empty http section after fast remove` — drop a bare `http:` block from the single file when the removed hart key was the last one, so a file with only foreign `tcp:`/`udp:` sections stays clean.
 - `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass.
-- Manual dry-runs in file and directory modes with mixed-case hart entries, uppercase `WILDCARD_DOMAIN`/`WILDCARD_INSTANCE_DOMAIN`, leading `*.`, trailing DNS dots, and `LC_ALL=en_US.UTF-8` produced the expected wildcard/per-domain files, correct foreign section preservation, and a clean merged single-file output. A fast `--remove` in file mode left non-http sections untouched.
+- Manual dry-runs in file and directory modes with mixed-case hart entries, uppercase `WILDCARD_DOMAIN`/`WILDCARD_INSTANCE_DOMAIN`, leading `*.`, trailing DNS dots, and `LC_ALL=en_US.UTF-8` produced the expected wildcard/per-domain files, correct foreign section preservation, a clean merged single-file output, and a fast `--remove` that left non-http sections untouched and dropped a bare `http:` block when the removed hart key was the last one.
 - The objective is resolved; PRs #132 and #133 are superseded by this branch.
 
