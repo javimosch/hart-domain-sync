@@ -1018,3 +1018,35 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
 - If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the original objective is resolved and no further action is needed.
 
 
+## 2026-08-22 architect plan and final status (am-add074-dkva1ivxhk3b-c00cb3a1)
+
+- `gh issue list --state open` returns `[]`; all reported issues remain CLOSED. No open GitHub issues remain to fix.
+- `gh pr list --state open` returns `[]`; no open PRs remain. The current branch `am/am-add074-dkva1ivxhk3b-c00cb3a1` is at the same commit as `origin/master` (`022fa74`) with a clean worktree.
+- `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass in this environment.
+- No dev code change is required to resolve the empty open issue/PR list. This run lands a `docs(agents)` update to `AGENTS.md` recording the current open issue/PR status and the QA verification gate.
+- QA runs the final verification gate:
+  - `bash -n hart-domain-sync.sh hart-domain-hook.sh`
+  - `shellcheck hart-domain-sync.sh hart-domain-hook.sh`
+  - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN` (including a child-of-parent case), mixed-case hart entries, `--remove`, leading `*.`, and trailing DNS dots
+  - regression for the latest merged fixes in `origin/master`: `rule_claimed` backslash-escaped backtick matching, path/query stripping of `HART_URL`/`SERVICE_URL`, the `WILDCARD_INSTANCE_DOMAIN` precedence over `WILDCARD_DOMAIN`, hook stdin redirect and empty-domain guard, stale inert file cleanup, and advisory `flock` serialization
+  - regression tests under a non-C locale (e.g., `LC_ALL=en_US.UTF-8`)
+- If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the objective is resolved and no further action is needed.
+
+## 2026-08-22 dev verification log (am-add074-dkva1ivxhk3b-c00cb3a1)
+
+- `gh issue list --state open` returned `[]` and `gh pr list --state open` returned `[]` in this run.
+- `bash -n hart-domain-sync.sh hart-domain-hook.sh` passes.
+- `shellcheck hart-domain-sync.sh hart-domain-hook.sh` passes in this environment.
+- Directory-mode dry-run with `LC_ALL=en_US.UTF-8` and mixed-case hart entries (`Foo.Example.com`, `Bar.Ext.example.com.`, `a.test.example.com`, `claimed.org`, `new.org`), uppercase `WILDCARD_DOMAIN=Example.com` and `WILDCARD_INSTANCE_DOMAIN=Ext.example.com`, plus a trailing DNS dot on `Bar.Ext.example.com.`, produced the expected `hart-example-com-wildcard.yml` router, skipped `bar.ext.example.com` under the instance wildcard, and wrote per-domain files for `claimed.org` and `new.org`.
+- File-mode dry-run merged hart routers into the single dynamic file while preserving the foreign `Host(`claimed.org`)` router (literal backticks, matching the generated per-domain rule) and dropping stale `hart-` keys no longer in the desired set.
+- Fast `--remove claimed.org` removed the per-domain `hart-claimed-org.yml` in directory mode.
+- `hart-domain-hook.sh remove ""` rejected the empty domain; `hart-domain-hook.sh remove "claimed.org"` dispatched a background fast remove.
+- A non-C locale regression run (`LC_ALL=en_US.UTF-8`) also passed; no locale-dependent `grep`, `sed`, `tr`, or `awk` failures were observed.
+
+## 2026-08-22 final status (am-add074-dkva1ivxhk3b-c00cb3a1)
+
+- All dev and QA verification steps in this run passed: `bash -n`, `shellcheck`, directory- and file-mode manual dry-runs, fast `--remove`, `hart-domain-hook` empty-domain guard, and non-C locale regression.
+- `gh issue list --state open` and `gh pr list --state open` both remain empty.
+- The original objective is resolved; no further source-code change is required for this run.
+
+
