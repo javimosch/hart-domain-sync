@@ -338,7 +338,7 @@ fi
 # --- 1. desired set from hart (abort without pruning if unreachable) ---
 CURL_AUTH=()
 [ -n "$AUTH_TOKEN" ] && CURL_AUTH=("-H" "Authorization: Bearer $AUTH_TOKEN")
-RESP="$(curl -s --max-time 10 "${CURL_AUTH[@]}" "$HART_URL/v1/domain")" \
+RESP="$(curl -s --max-time 10 -f "${CURL_AUTH[@]}" "$HART_URL/v1/domain")" \
   || { log "cannot reach hart at $HART_URL — abort (no prune)"; exit 1; }
 echo "$RESP" | jq -e '.ok==true' >/dev/null 2>&1 \
   || { log "unexpected hart response — abort (no prune): $(printf '%.120s' "$RESP")"; exit 1; }
