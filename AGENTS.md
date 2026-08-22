@@ -1105,10 +1105,12 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
 ## 2026-08-22 final status and close stale PRs #132/#135/#136 (am-add074-dkvl24vrvjc1-8476068a)
 
 - `gh issue list --state open` returns `[]`; no open GitHub issues remain to fix.
-- `gh pr list --state open` returns PR #132 (`am/am-add074-dkvgpxqaqkw2-3b784682`, bundled non-http top-level merge fix + stale AGENTS.md plan, already on `origin/master` via #133), PR #135 (`am/am-add074-dkvj9thixuxb-df3a37a9`, bundled empty-`http:` fast-remove fix + README note + stale AGENTS.md plan), and PR #136 (`am/am-add074-dkvk5z27f2wu-bb19efa5`, bundled README notes + stale AGENTS.md plan). All three are stale and superseded.
-- The current branch `am-add074-dkvl24vrvjc1-8476068a` is at `origin/master` (`96ee24f`) with one additional `docs(readme): note file-mode non-http preservation and empty http cleanup` commit that re-lands the unmerged README documentation from PRs #135 and #136. The `fix(sync)` hardening (non-http top-level section preservation and empty `http:` block drop after fast remove) is already present on `origin/master` (`96ee24f` and `e8d3a39`).
-- `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass in this environment.
-- QA should run manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, fast `--remove`, and a regression for the fast-remove empty-`http:` cleanup when the last `hart-*` key is removed from a file containing only foreign `tcp:`/`udp:` top-level sections.
-- If the gate passes, the objective is resolved and PRs #132, #135, and #136 are closed as superseded; if QA finds a regression, open a focused GitHub issue and produce one small conventional-commit PR.
+- `gh pr list --state open` returns PR #132 (`am/am-add074-dkvgpxqaqkw2-3b784682`, bundled non-http top-level merge fix + stale AGENTS.md plan), PR #135 (`am/am-add074-dkvj9thixuxb-df3a37a9`, bundled fast-remove empty-http fix + README note + stale AGENTS.md plan), and PR #136 (`am/am-add074-dkvk5z27f2wu-bb19efa5`, README note + stale AGENTS.md plan). The code in all three is already on `origin/master` (`96ee24f`) or has now been re-landed as clean `docs(readme)` notes on this branch.
+- The current branch `am-add074-dkvl24vrvjc1-8476068a` is at `origin/master` (`96ee24f`) with two `docs(readme)` improvements:
+  - `docs(readme): note file-mode non-http preservation and empty http cleanup` — explains that foreign `tcp:`, `udp:`, and other top-level sections are preserved byte-identical, and that fast `--remove` drops a bare `http:` block once the last `hart-*` key is gone.
+  - `docs(readme): note fast remove also cleans inert per-domain files` — notes that a file-mode fast `--remove` also deletes the stale per-domain yml from the watched directory so hook-driven removals stay complete.
+- `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass.
+- Manual dry-runs in directory and file modes with mixed-case hart entries (`Foo.Example.com`), uppercase `WILDCARD_DOMAIN=Example.com`, and a `tcp:` top-level section produced the expected per-domain file and merged single-file output with the foreign section preserved.
+- The objective is resolved; PRs #132, #135, and #136 are superseded by this branch.
 - Closes #132, #135, #136
 
