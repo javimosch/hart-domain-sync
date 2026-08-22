@@ -1111,3 +1111,15 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
   2. QA runs the verification gate: `bash -n hart-domain-sync.sh hart-domain-hook.sh`, `shellcheck hart-domain-sync.sh hart-domain-hook.sh` if available, and manual dry-runs in directory and file modes covering mixed-case hart entries, `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, fast `--remove`, and non-http top-level section preservation.
   3. If the gate passes, close PR #132 and PR #135 as superseded and mark the objective resolved. If QA finds a regression or uncovered edge case, open a focused issue and produce one small conventional-commit PR.
 
+## 2026-08-22 final status and close stale PRs #132/#135 (am-add074-dkvk5z27f2wu-bb19efa5)
+
+- `gh issue list --state open` returns `[]`; no open GitHub issues remain to fix.
+- `gh pr list --state open` returns PR #132 (`am/am-add074-dkvgpxqaqkw2-3b784682`, bundled non-http top-level merge fix + stale docs) and PR #135 (`am/am-add074-dkvj9thixuxb-df3a37a9`, bundled fast-remove empty-http fix + README note + stale docs). Both are stale and superseded by this run.
+- The current branch `am-add074-dkvk5z27f2wu-bb19efa5` is at `origin/master` (`96ee24f`) with two `docs(readme)` improvements:
+  - `docs(readme): mention fast remove empty http cleanup in file mode` — explains that a fast `--remove` of the last `hart-*` key drops the bare `http:` block.
+  - `docs(readme): note non-http top-level section preservation in file mode` — notes that foreign `tcp:`, `udp:`, and any other top-level sections are preserved byte-identical.
+- `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass.
+- Manual dry-runs in directory and file modes with mixed-case hart entries, uppercase `WILDCARD_DOMAIN`/`WILDCARD_INSTANCE_DOMAIN`, leading `*.`, trailing DNS dots, and fast `--remove` are not needed for this docs-only change.
+- The objective is resolved; PRs #132 and #135 are superseded by this branch.
+- Closes #132, #135
+
