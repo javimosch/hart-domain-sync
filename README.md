@@ -50,7 +50,9 @@ In **file mode** the single file is usually shared with whatever else manages it
 replaces only `hart-*` keys and carries every other entry through byte-identical — it splices text
 rather than round-tripping the YAML, so comments and other tools' formatting survive. Writes are
 atomic (temp file + rename), so Traefik never sees a half-written file, and the merge is a fixpoint,
-so steady-state runs change nothing and trigger no reload.
+so steady-state runs change nothing and trigger no reload. Fast `--remove` also drops a bare
+`http:` block once the last `hart-*` key is removed, so a file with only foreign `tcp:`/`udp:`
+sections stays clean.
 
 **A host already routed by someone else is left alone.** Before writing a router, the reconciler
 checks the `Host()` rules already claimed by routers it does not own (in the shared file, or in
