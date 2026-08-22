@@ -1082,4 +1082,19 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
 - The duplicate commits on this branch were dropped with `git reset --hard origin/master`.
 - This run lands a fresh `docs(agents)` final-status entry only; no further source-code change is required.
 
+## 2026-08-22 architect plan (am-add074-dkve7kw63lz3-8701b514)
+
+- `gh issue list --state open` returns `[]`; no open GitHub issues remain to fix.
+- `gh pr list --state open` returns `[]`; no open PRs remain.
+- The current branch `am-add074-dkve7kw63lz3-8701b514` is at the same commit as `origin/master` (`41b422e`) with a clean worktree.
+- `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass in this environment.
+- No dev source-code change is required to resolve the empty open issue/PR list.
+- QA runs the final verification gate:
+  - `bash -n hart-domain-sync.sh hart-domain-hook.sh`
+  - `shellcheck hart-domain-sync.sh hart-domain-hook.sh`
+  - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN` (including a child-of-parent case), mixed-case hart entries, `--remove`, leading `*.`, and trailing DNS dots
+  - regression for the latest merged fixes in `origin/master`: `rule_claimed` backtick matching, path/query stripping of `HART_URL`/`SERVICE_URL`, `WILDCARD_INSTANCE_DOMAIN` precedence over `WILDCARD_DOMAIN`, hook empty-domain guard and stdin redirect, stale inert file cleanup, advisory `flock` serialization, and `curl -f` on hart/Cloudflare calls
+  - regression tests under a non-C locale (e.g., `LC_ALL=en_US.UTF-8`)
+- If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the original objective is resolved and no further action is needed.
+
 
