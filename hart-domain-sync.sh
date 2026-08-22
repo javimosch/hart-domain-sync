@@ -152,13 +152,13 @@ if ! is_nonnegative_int "$PROPAGATE_WAIT"; then
   PROPAGATE_WAIT=10
 fi
 
-# A bare scheme (e.g. http://) would make the hart/Traefik call invalid.
+# A bare scheme (e.g. http://) or embedded whitespace would make the hart/Traefik call invalid.
 if ! url_has_path_after_scheme "$HART_URL"; then
-  log "HART_URL '$HART_URL' is missing a host; aborting"
+  log "HART_URL '$HART_URL' is not a valid base URL (missing host or contains whitespace); aborting"
   exit 1
 fi
 if ! url_has_path_after_scheme "$SERVICE_URL"; then
-  log "SERVICE_URL '$SERVICE_URL' is missing a host; using HART_URL"
+  log "SERVICE_URL '$SERVICE_URL' is not a valid base URL (missing host or contains whitespace); using HART_URL"
   SERVICE_URL="$HART_URL"
 fi
 
