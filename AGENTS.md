@@ -1093,4 +1093,18 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
 - Verification: `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass.
 - Closes #129
 
+## 2026-08-22 final status and close stale PR #131 (am-add074-dkvgpxqaqkw2-3b784682)
+
+- `gh issue list --state open` returns `[]`; no open GitHub issues remain to fix.
+- `gh pr list --state open` returns only PR #131 (`am/am-add074-dkvftrwz1z5t-d0424789`, `docs(agents): add current run final status`). It is stale and superseded by this run.
+- The current branch `am/am-add074-dkvgpxqaqkw2-3b784682` is at `origin/master` (`8ba253d`) with a clean worktree. All the URL validation hardening, `curl -f` Cloudflare/hart error handling, and earlier robustness fixes are already merged.
+- Pre-flight checks in this environment: `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass.
+- QA runs the final verification gate before this branch is marked ready:
+  - `bash -n hart-domain-sync.sh hart-domain-hook.sh`
+  - `shellcheck hart-domain-sync.sh hart-domain-hook.sh`
+  - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, `--remove`, leading `*.`, and trailing DNS dots
+  - regression for the latest merged fixes: URL validation that rejects whitespace and bare scheme, router temp files created in the destination directory, path/query stripping of `HART_URL`/`SERVICE_URL`, `WILDCARD_INSTANCE_DOMAIN` precedence, hook empty-domain guard, stale inert file cleanup, `flock` serialization, and mixed-case/lowercase normalization
+  - regression under a non-C locale (e.g., `LC_ALL=en_US.UTF-8`)
+- If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the objective is resolved and PR #131 is closed as superseded.
+- Closes #131
 
