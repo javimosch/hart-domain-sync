@@ -615,31 +615,49 @@ stage, target, prefix = os.environ["STAGE"], os.environ["TARGET"], os.environ["P
 SECTIONS = ("routers", "services", "middlewares")
 
 def split_http(text):
-    """section -> {key: raw block}. Text-based on purpose: preserves foreign bytes."""
+    """Return (sections, rest). sections is {section: {key: raw block}} for http;
+       rest is a list of (name, raw_block) for any other top-level sections,
+       preserved byte-identical so tcp/udp/etc are not folded into http."""
     out, section, key, buf = {}, None, None, []
+    rest, rest_name, rest_buf = [], None, []
     def flush():
         nonlocal key, buf
         if section and key and buf:
             out.setdefault(section, {})[key] = "\n".join(buf).rstrip() + "\n"
         key, buf = None, []
+    def flush_rest():
+        nonlocal rest_name, rest_buf
+        if rest_name:
+            rest.append((rest_name, "\n".join(rest_buf).rstrip("\n") + "\n"))
+        rest_name, rest_buf = None, []
     for line in text.split("\n"):
         t = line.strip()
         indent = len(line) - len(line.lstrip(" "))
+        if indent == 0 and t and t.endswith(":"):
+            flush(); flush_rest()
+            if t == "http:":
+                section = None
+                continue
+            rest_name = t
+            rest_buf = [line]
+            section = None
+            continue
+        if rest_name:
+            rest_buf.append(line)
+            continue
+        if section is None and t == "":
+            continue
         if indent == 2 and t.endswith(":") and not t.startswith("-"):
             flush(); section = t[:-1]; continue
-        if indent == 0 and t:
-            flush()
-            if t != "http:": section = None
-            continue
         if section is None: continue
         if indent == 4 and t.endswith(":") and " " not in t:
             flush(); key = t[:-1]; buf = [line]; continue
         if key and (indent > 4 or not t):
             buf.append(line)
-    flush()
-    return out
+    flush(); flush_rest()
+    return out, rest
 
-def render(sections):
+def render(sections, rest):
     parts = ["http:\n"]
     for sec in SECTIONS:
         blocks = sections.get(sec) or {}
@@ -647,13 +665,15 @@ def render(sections):
         parts.append("  %s:\n" % sec)
         for name in sorted(blocks):                       # sorted => stable bytes
             parts.append(blocks[name].rstrip("\n") + "\n\n")
+    for name, block in rest:
+        parts.append(block.rstrip("\n") + "\n\n")
     return "".join(parts)
 
 try:
     existing = open(target).read()
 except FileNotFoundError:
     existing = ""
-merged = split_http(existing)
+merged, rest = split_http(existing)
 
 # drop every key we own; the staged files are the complete truth for those
 for sec in SECTIONS:
@@ -703,7 +723,7 @@ claimed = host_rules(merged)   # `merged` currently holds ONLY foreign routers
 
 skipped = []
 for f in sorted(glob.glob(os.path.join(stage, prefix + "*.yml"))):
-    staged = split_http(open(f).read())
+    staged, _ = split_http(open(f).read())
     collide = None
     for rule, owner in host_rules(staged).items():
         if rule in claimed:
@@ -721,7 +741,7 @@ for m in skipped:
 
 owned = sum(1 for sec in SECTIONS for n in (merged.get(sec) or {}) if n.startswith(prefix))
 foreign = sum(1 for sec in SECTIONS for n in (merged.get(sec) or {}) if not n.startswith(prefix))
-out = render(merged)
+out = render(merged, rest)
 
 if out == existing:
     print("unchanged %d %d" % (owned, foreign)); sys.exit(0)
