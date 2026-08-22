@@ -1090,3 +1090,14 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
 - Manual dry-runs in directory and file modes with mixed-case hart entries (`Foo.Ext.example.com`, `bar.example.com`), uppercase `WILDCARD_DOMAIN=Example.com` and `WILDCARD_INSTANCE_DOMAIN=Ext.example.com`, bare schemes (`http://`), whitespace-embedded URLs, multiple trailing slashes, and fast `--remove` produced the expected validation failures, per-domain/wildcard router files, and merged single-file output. The empty-domain guard in `hart-domain-hook.sh` also passed.
 - The original objective is resolved; this branch records a fresh `docs(agents)` final-status entry only.
 
+## 2026-08-22 final status and close stale PRs #132/#134 (am-add074-dkvj9thixuxb-df3a37a9)
+
+- `gh issue list --state open` returns `[]`; no open GitHub issues remain to fix.
+- `gh pr list --state open` returns PR #132 (`am/am-add074-dkvgpxqaqkw2-3b784682`, a stale docs+merge fix already superseded by the file-mode non-http preservation on `origin/master`) and PR #134 (`am/am-add074-dkvidnovtlxa-3fd42d32`, the same `fix(sync): avoid empty http section after fast remove` hardening plus a bundled docs plan). Both are stale and superseded by this run.
+- The current branch `am-add074-dkvj9thixuxb-df3a37a9` is at `origin/master` (`e8d3a39`) with one additional `fix(sync)` commit:
+  - `fix(sync): avoid empty http section after fast remove` — after a fast `--remove` of the last `hart-*` router/service/middleware from the single dynamic file, drop the bare `http:` block so files that contain only foreign `tcp:`/`udp:`/etc top-level sections stay clean.
+- `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass in this environment.
+- Manual dry-runs in file and directory modes with mixed-case hart entries, uppercase `WILDCARD_DOMAIN`/`WILDCARD_INSTANCE_DOMAIN`, leading `*.`, trailing DNS dots, and fast `--remove` produced the expected per-domain/wildcard files and merged single-file output. The fast remove left non-http top-level sections untouched and dropped an empty `http:` block when the removed hart key was the last one.
+- If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the objective is resolved, PRs #132 and #134 are closed as superseded, and no further action is needed.
+- Closes #132, #134
+
