@@ -247,17 +247,23 @@ try:
     text = open(target).read()
 except FileNotFoundError:
     print("0"); sys.exit(0)
-sections = ("routers", "services", "middlewares")
-out, section, skip, changed = [], None, False, False
+http_sections = ("routers", "services", "middlewares")
+out, top, section, skip, changed = [], None, None, False, False
 for line in text.split("\n"):
     t = line.strip()
     indent = len(line) - len(line.lstrip(" "))
+    if indent == 0 and t and t.endswith(":"):
+        top = t[:-1]
+        section = None
+        skip = False
+        out.append(line)
+        continue
     if indent == 2 and t.endswith(":") and not t.startswith("-"):
         section = t[:-1]
         skip = False
         out.append(line)
         continue
-    if section in sections and indent == 4 and t.endswith(":") and " " not in t:
+    if top == "http" and section in http_sections and indent == 4 and t.endswith(":") and " " not in t:
         if t[:-1] == key:
             skip = True
             changed = True
