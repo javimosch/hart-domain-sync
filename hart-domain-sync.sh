@@ -73,7 +73,7 @@ SERVICE_URL="$(trim "$SERVICE_URL")"
 # fragment cannot leak into the hart API endpoint (/v1/domain) or the Traefik
 # upstream URL. Keep the existing trailing-slash loop as a backstop.
 url_base() { printf '%s' "$1" | LC_ALL=C sed -n 's/^\([[:alpha:]][-+[:alnum:].]*:\/\/[^/?#]*\).*/\1/p'; }
-url_has_path_after_scheme() { (LC_ALL=C; [[ "$1" =~ ^[[:alpha:]][-+[:alnum:].]*://[^/[:space:]] ]]); }
+url_has_path_after_scheme() { (LC_ALL=C; [[ "$1" =~ ^[[:alpha:]][-+[:alnum:].]*://[^/[:space:]][^[:space:]]*$ ]]); }
 HART_URL="$(url_base "$HART_URL")"
 SERVICE_URL="$(url_base "$SERVICE_URL")"
 while [[ "$HART_URL" == */ ]] && url_has_path_after_scheme "$HART_URL"; do HART_URL="${HART_URL%/}"; done
@@ -152,13 +152,13 @@ if ! is_nonnegative_int "$PROPAGATE_WAIT"; then
   PROPAGATE_WAIT=10
 fi
 
-# A bare scheme (e.g. http://) would make the hart/Traefik call invalid.
+# A bare scheme (e.g. http://) or embedded whitespace would make the hart/Traefik call invalid.
 if ! url_has_path_after_scheme "$HART_URL"; then
-  log "HART_URL '$HART_URL' is missing a host; aborting"
+  log "HART_URL '$HART_URL' is not a valid base URL (missing host or contains whitespace); aborting"
   exit 1
 fi
 if ! url_has_path_after_scheme "$SERVICE_URL"; then
-  log "SERVICE_URL '$SERVICE_URL' is missing a host; using HART_URL"
+  log "SERVICE_URL '$SERVICE_URL' is not a valid base URL (missing host or contains whitespace); using HART_URL"
   SERVICE_URL="$HART_URL"
 fi
 
@@ -536,7 +536,7 @@ for d in "${DOMAINS[@]}"; do
   fi
 
   existed=0; [ -e "$f" ] && existed=1
-  tmp="$(mktemp)"
+  tmp="$(mktemp "$DEST/.hart-XXXXXX")" || { log "cannot create temp file in $DEST"; exit 1; }
   cat > "$tmp" <<YAML
 # managed by hart-domain-sync — regenerated, do not edit. domain: $d
 http:
@@ -564,7 +564,7 @@ if [ -n "$WILDCARD_DOMAIN" ] && [ "$NEEDS_WILDCARD" = "1" ]; then
   wf="$DEST/$WILDCARD_FILE"
   REGEX="$(regex_escape "$WILDCARD_DOMAIN")"
   existed=0; [ -e "$wf" ] && existed=1
-  tmp="$(mktemp)"
+  tmp="$(mktemp "$DEST/.hart-XXXXXX")" || { log "cannot create temp file in $DEST"; exit 1; }
   cat > "$tmp" <<YAML
 # managed by hart-domain-sync — wildcard router for *.$WILDCARD_DOMAIN
 http:
