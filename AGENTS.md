@@ -1222,6 +1222,7 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
   3. If the gate passes, close PR #145 as superseded and the objective is resolved. If QA finds a regression or uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR.
 - Closes #145
 
+
 ## 2026-08-23 architect plan (am-add074-dkweti1zvnrk-d9854d87)
 
 - `gh issue list --state open` returns `[]`; no open GitHub issues remain to fix.
@@ -1239,3 +1240,17 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
   3. QA runs the verification gate: `bash -n hart-domain-sync.sh hart-domain-hook.sh`, `shellcheck hart-domain-sync.sh hart-domain-hook.sh` if available, and manual dry-runs in directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, fast `--remove`, unquoted `#` in `CF_ENV`, and all common `Host()` rule styles (literal backticks, single quotes, double quotes, uppercase, backslash-escaped inner quotes in double-quoted YAML, and doubled single quotes in single-quoted YAML).
   4. If the gate passes, close PR #147 and PR #148 as superseded and the objective is resolved. If QA finds a regression or uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR.
 - Relates-to #147, #148
+
+## 2026-08-23 final status and supersede stale PRs #147/#148 (am-add074-dkweti1zvnrk-d9854d87)
+
+- `gh issue list --state open` returns `[]`; no open GitHub issues remain to fix.
+- `gh pr list --state open` returns PR #147 (`am/am-add074-dkwcx4vk230k-fd246db5`, `docs(agents): 2026-08-23 final status and supersede stale PRs #145/#146`) and PR #148 (`am/am-add074-dkwdtaj11i1w-280db1f8`, `fix(sync): make rule comparison case-insensitive in both modes`). PR #147 is `mergeStateStatus: DIRTY`/`CONFLICTING` and stale; PR #148 is `mergeStateStatus: CLEAN` but its work is re-landed cleanly here.
+- The current branch `am-add074-dkweti1zvnrk-d9854d87` is at `origin/master` (`9276496`) with the following clean conventional commits:
+  - `fix(sync): normalize rule delimiters and case in both modes` — the `qstrip()` helpers in both `PYCLAIM` (directory mode) and `PYMERGE` (file mode) now collapse backslash-escaped delimiters, YAML single-quote doubling, single quotes, and double quotes to lowercase backtick-delimited rules, making `Host()` rule collision checks case-insensitive and delimiter-agnostic.
+  - `docs(readme): document case-insensitive and delimiter-normalized rule matching` — explains that a foreign router written with `Host('foo')` or `Host("foo")` is recognized the same as ``Host(`foo`)``.
+  - `docs(agents): 2026-08-23 architect plan for rule comparison and stale PRs #147/#148` — this branch's plan.
+  - `docs(agents): 2026-08-23 final status and supersede stale PRs #147/#148` — this entry.
+- `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass.
+- Manual dry-runs in directory and file modes covered `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, fast `--remove`, unquoted `#` in `CF_ENV`, and all common `Host()` rule styles (literal backticks, single quotes, double quotes, uppercase, backslash-escaped inner quotes in double-quoted YAML, and doubled single quotes in single-quoted YAML), confirming the reconciler skips the already-claimed host in both modes.
+- The objective is resolved; PRs #147 and #148 are superseded by this branch.
+- Closes #147, #148
