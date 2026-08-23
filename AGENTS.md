@@ -1163,3 +1163,14 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
   3. If the gate passes, add a fresh `docs(agents): 2026-08-23 final status` entry and close PR #139 as superseded. If QA finds a regression or uncovered edge case, open a focused issue and produce one small conventional-commit PR.
 - Relates-to #139
 
+## 2026-08-23 final status and close stale PR #139 (am-add074-dkw7aztag950-d3e68141)
+
+- `gh issue list --state open` returns `[]`; no open GitHub issues remain to fix.
+- `gh pr list --state open` returns only PR #139 (`am/am-add074-dkw5k7pcb9hf-54197a01`, `fix(cf): preserve unquoted # inside cloudflare env values`). Its code changes are already on `origin/master` (`e64c94e`), so it is stale and superseded by this branch.
+- This branch adds one additional `fix(sync)` improvement:
+  - `fix(sync): normalize backslash-escaped backticks in Host() rule scanner` — both `PYCLAIM` (directory mode) and `PYMERGE` (file mode) now collapse `\` to a literal backtick after stripping quotes and comments, so a foreign router written as `rule: "Host(\\`foo.example.com\\`)"` is recognized as already claiming the host and `hart-domain-sync` does not write a conflicting router. `rule_claimed()` continues to build the wanted rule with literal backticks.
+- `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass.
+- Manual dry-runs in directory and file modes with both `Host(`foo.example.com`)` (literal backticks) and `Host(\\`foo.example.com\\`)` (backslash-escaped) foreign routers confirm the reconciler skips the already-claimed host in both modes and the file-mode merge preserves the foreign router.
+- The objective is resolved; PR #139 is superseded and no further action is needed.
+- Closes #139
+
