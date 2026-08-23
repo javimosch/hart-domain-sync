@@ -44,7 +44,9 @@ self-signed default, with nothing in the logs to say why. So the mode is detecte
 In **file mode** the per-domain files are staged in a tmpdir and only `hart-*` keys are folded
 into the single file. Any of our old files left in `$DEST` from a previous directory-mode run are
 removed, since a `filename:` Traefik never reads them — they are inert but look exactly like live
-config to whoever debugs the next routing problem.
+config to whoever debugs the next routing problem. Fast `--remove` in file mode also deletes the
+inert per-domain file from `$DEST`, so the cleanup stays complete even when a hook fires before the
+next full reconcile.
 
 In **file mode** the single file is usually shared with whatever else manages it. The merge therefore
 replaces only `hart-*` keys and carries every other entry through byte-identical — it splices text

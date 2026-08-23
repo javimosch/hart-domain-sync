@@ -1134,3 +1134,21 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
   3. If the gate passes, close PR #137 as superseded and mark the objective resolved. If QA finds a regression or uncovered edge case, open a focused issue and produce one small conventional-commit PR.
 - Relates-to #137
 
+## 2026-08-23 final status and close stale PRs #137/#139 (am-add074-dkw6eubei9oh-50920ddb)
+
+- `gh issue list --state open` returns `[]`; no open GitHub issues remain to fix.
+- `gh pr list --state open` returns PR #137 (`am/am-add074-dkvl24vrvjc1-8476068a`, `docs(readme): note file-mode non-http preservation and empty http cleanup`) and PR #139 (`am/am-add074-dkw5k7pcb9hf-54197a01`, `fix(cf): preserve unquoted # inside cloudflare env values`). Both are stale and superseded by this branch.
+- The current branch `am/am-add074-dkw6eubei9oh-50920ddb` is at `origin/master` (`ad73c13`) with two clean re-landed improvements plus this final-status:
+  - `docs(readme): note fast remove also cleans inert per-domain files` — documents that file-mode `--remove` also deletes the inert per-domain yml from `$DEST` so hook-driven removals stay complete.
+  - `fix(hook): lowercase remove domain before dispatch` — `hart-domain-hook.sh` now lower-cases the remove domain before handing it to `hart-domain-sync --remove`, matching the reconciler's lowercase normalization and avoiding a mismatch when the hook itself logs the domain.
+  - `docs(agents): 2026-08-23 final status and close stale PRs #137/#139` — records the current open issue/PR status and closes both stale PRs.
+- `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass.
+- QA runs the verification gate:
+  - `bash -n hart-domain-sync.sh hart-domain-hook.sh`
+  - `shellcheck hart-domain-sync.sh hart-domain-hook.sh` if available
+  - manual dry-runs in directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, and fast `--remove`
+  - regression for unquoted `#` in `CF_ENV` values and hook remove-domain lowercasing
+  - confirm generated Traefik `Host()` / `HostRegexp()` rules and Cloudflare DNS targets are lowercase
+- If QA finds a regression or uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the objective is resolved, PRs #137 and #139 are superseded, and no further action is needed.
+- Closes #137, #139
+
