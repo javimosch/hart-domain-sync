@@ -1123,3 +1123,14 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
 - The objective is resolved; PRs #132 and #135 are superseded by this branch.
 - Closes #132, #135
 
+## 2026-08-23 architect plan (am-add074-dkw4o2bb2pfv-5c41f0ed)
+
+- `gh issue list --state open` returns `[]`; no open GitHub issues remain to fix.
+- `gh pr list --state open` returns only PR #137 (`am/am-add074-dkvl24vrvjc1-8476068a`, `docs(readme): note file-mode non-http preservation and empty http cleanup`). It is merge-conflicting and stale: two of its three README notes are already on `origin/master` (`68d4a70` / PR #136), and the only remaining unmerged piece is the note that fast `--remove` in file mode also cleans inert per-domain files from `$DEST`.
+- The underlying code for inert per-domain cleanup is already in `hart-domain-sync.sh` (line 322); only the README documentation is missing.
+- Plan:
+  1. Dev re-lands the unmerged README note from PR #137 as a clean `docs(readme): note fast remove also cleans inert per-domain files` commit (do not import the stale AGENTS.md plan from PR #137). No other source-code change is required.
+  2. QA runs the verification gate: `bash -n hart-domain-sync.sh hart-domain-hook.sh`, `shellcheck hart-domain-sync.sh hart-domain-hook.sh` if available, and a focused manual dry-run in file mode that exercises fast `--remove` and confirms the stale `hart-<slug>.yml` in `$DEST` is removed and the single-file merge stays clean.
+  3. If the gate passes, close PR #137 as superseded and mark the objective resolved. If QA finds a regression or uncovered edge case, open a focused issue and produce one small conventional-commit PR.
+- Relates-to #137
+

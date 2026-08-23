@@ -183,7 +183,7 @@ fi
 # quotes, embedded spaces and any "=" inside the value, and shell-style trailing
 # comments outside of quoted strings.
 strip_env_comment() {
-  local s="$1" c in_quote="" out=""
+  local s="$1" c in_quote="" out="" prev
   for (( i=0; i<${#s}; i++ )); do
     c="${s:$i:1}"
     if [ -n "$in_quote" ]; then
@@ -194,7 +194,18 @@ strip_env_comment() {
     if [ "$c" = '"' ] || [ "$c" = "'" ]; then
       in_quote="$c"; out="$out$c"; continue
     fi
-    [ "$c" = "#" ] && break
+    if [ "$c" = "#" ]; then
+      # `#` starts a shell-style comment only when it begins a word (preceded
+      # by whitespace). Keep `#` inside or at the start of an unquoted value.
+      if [ "$i" -gt 0 ]; then
+        prev="${s:$((i-1)):1}"
+        if [[ "$prev" == [[:space:]] ]]; then
+          break
+        fi
+      fi
+      out="$out$c"
+      continue
+    fi
     out="$out$c"
   done
   printf '%s' "$out"
