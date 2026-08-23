@@ -438,10 +438,20 @@ def strip_comment(s):
 
 def qstrip(s):
     s = s.strip()
-    if (s.startswith('"') and s.endswith('"')) or (s.startswith("'") and s.endswith("'")):
+    outer = None
+    if len(s) >= 2 and (s.startswith('"') and s.endswith('"')):
+        outer = '"'
+        s = s[1:-1].strip()
+    elif len(s) >= 2 and (s.startswith("'") and s.endswith("'")):
+        outer = "'"
         s = s[1:-1].strip()
     # Match PYMERGE: backslash-escaped backticks are the same rule.
-    return s.replace('\\`', '`').lower().replace("'", '`').replace('"', '`')
+    # Unescape backslash-escaped delimiters and YAML single-quote doubling
+    # so Host("foo"), Host('foo'), and Host(`foo`) compare equal.
+    s = s.replace('\\`', '`').replace('\\"', '"').replace("\\'", "'")
+    if outer == "'":
+        s = s.replace("''", "'")
+    return s.lower().replace("'", '`').replace('"', '`')
 
 for f in files:
     try: lines = open(f).read().split("\n")
@@ -730,12 +740,22 @@ for sec in SECTIONS:
 # This is the mirror of hotify's "owner wins": whoever is already there is the owner.
 def qstrip(s):
     s = s.strip()
-    if (s.startswith('"') and s.endswith('"')) or (s.startswith("'") and s.endswith("'")):
+    outer = None
+    if len(s) >= 2 and (s.startswith('"') and s.endswith('"')):
+        outer = '"'
+        s = s[1:-1].strip()
+    elif len(s) >= 2 and (s.startswith("'") and s.endswith("'")):
+        outer = "'"
         s = s[1:-1].strip()
     # Traefik rules use backticks as delimiters. Foreign files sometimes escape
     # them with a backslash inside YAML double quotes; normalize so the same
     # logical rule compares equal regardless of escaping style.
-    return s.replace('\\`', '`').lower().replace("'", '`').replace('"', '`')
+    # Unescape backslash-escaped delimiters and YAML single-quote doubling
+    # so Host("foo"), Host('foo'), and Host(`foo`) compare equal.
+    s = s.replace('\\`', '`').replace('\\"', '"').replace("\\'", "'")
+    if outer == "'":
+        s = s.replace("''", "'")
+    return s.lower().replace("'", '`').replace('"', '`')
 
 def strip_comment(s):
     in_quote = None
