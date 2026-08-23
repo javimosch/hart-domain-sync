@@ -1197,3 +1197,16 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
 - Manual dry-runs in directory and file modes cover `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, fast `--remove`, unquoted `#` in `CF_ENV`, and both literal and backslash-escaped backticks in foreign routers.
 - The objective is resolved; no further action is needed.
 - Relates-to #139, #141
+
+## 2026-08-23 final status and supersede stale PRs #143 and #144 (am-add074-dkwax5v643oj-899d6b46)
+
+- `gh issue list --state open` returns `[]`; no open GitHub issues remain to fix.
+- `gh pr list --state open` returns PR #143 (`am/am-add074-dkw9ayvqf8e1-306bd31e`, `docs(agents): 2026-08-23 final status and supersede stale PR #142`) in `CONFLICTING` state and PR #144 (`am/am-add074-dkwa4280ny18-8539aa5d`, `docs(agents): 2026-08-23 final status and supersede stale PR #143`) in `MERGEABLE` state; both are stale docs-only PRs and are superseded by this fresh final-status.
+- The current branch `am/am-add074-dkwax5v643oj-899d6b46` is at `origin/master` (`0f8e16d`) with this final-status; no source-code changes are required.
+- All recent robustness fixes are already in `hart-domain-sync.sh` and `hart-domain-hook.sh`, including `strip_env_comment()` for unquoted `#` in `CF_ENV`, backslash-escaped backtick rule scanning, URL validation, fast `--remove`, lower-case normalization, and `curl -f` for Cloudflare calls.
+- `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass.
+- Plan:
+  1. QA runs the manual verification gate in directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, fast `--remove`, unquoted `#` in `CF_ENV`, and backslash-escaped backticks in foreign routers.
+  2. If the gate passes, the objective is resolved; PRs #143 and #144 should be closed as superseded and no further action is needed.
+  3. If QA finds a regression or uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR.
+- Closes #143, closes #144
