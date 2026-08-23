@@ -37,7 +37,9 @@ fi
 EVENT="$(trim "${1:-}" | LC_ALL=C tr '[:upper:]' '[:lower:]')"
 case "$EVENT" in
   remove)
-    DOMAIN="$(trim "${2:-}")"
+    # DNS/HTTP hostnames are case-insensitive; pass a lower-cased domain to the
+    # sync script so hook logs and the generated per-domain slug stay consistent.
+    DOMAIN="$(trim "${2:-}" | LC_ALL=C tr '[:upper:]' '[:lower:]')"
     if [ -z "$DOMAIN" ]; then
       printf '%s\n' "hart-domain-hook: missing domain for remove" >>"$LOG"
       exit 1
