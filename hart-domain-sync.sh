@@ -441,7 +441,7 @@ def qstrip(s):
     if (s.startswith('"') and s.endswith('"')) or (s.startswith("'") and s.endswith("'")):
         s = s[1:-1].strip()
     # Match PYMERGE: backslash-escaped backticks are the same rule.
-    return s.replace('\\`', '`')
+    return s.replace('\\`', '`').lower()
 
 for f in files:
     try: lines = open(f).read().split("\n")
@@ -735,7 +735,7 @@ def qstrip(s):
     # Traefik rules use backticks as delimiters. Foreign files sometimes escape
     # them with a backslash inside YAML double quotes; normalize so the same
     # logical rule compares equal regardless of escaping style.
-    return s.replace('\\`', '`')
+    return s.replace('\\`', '`').lower()
 
 def strip_comment(s):
     in_quote = None
