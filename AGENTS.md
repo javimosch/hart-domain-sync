@@ -1209,3 +1209,16 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
   2. QA runs the verification gate: `bash -n hart-domain-sync.sh hart-domain-hook.sh`, `shellcheck hart-domain-sync.sh hart-domain-hook.sh` if available, and manual dry-runs in directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, fast `--remove`, unquoted `#` in `CF_ENV`, and backslash-escaped backticks in foreign routers.
   3. If the gate passes, close PR #143 as superseded and the objective is resolved. If QA finds a regression or uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR.
 - Closes #143
+
+## 2026-08-23 final status and supersede stale PRs #145/#146 (am/am-add074-dkwcx4vk230k-fd246db5)
+
+- `gh issue list --state open` returns `[]`; no open GitHub issues remain to fix.
+- `gh pr list --state open` returns PR #145 (`am/am-add074-dkwax5v643oj-899d6b46`, `docs(agents): 2026-08-23 final status and supersede stale PRs #143 and #144`) and PR #146 (`am/am-add074-dkwbtbdcpgs4-f86e57c3`, `docs(agents): 2026-08-23 final status and supersede stale PR #145`). Both are stale docs-only final-status entries: PR #145 is `mergeStateStatus: DIRTY`/`CONFLICTING` and PR #146 is `mergeStateStatus: CLEAN`, but both are superseded by this run's fresh `AGENTS.md` entry.
+- PR #143 is `CLOSED`, PR #144 is already `MERGED` into `origin/master` (`62bb5d2`), and all recent robustness fixes are already in `hart-domain-sync.sh` and `hart-domain-hook.sh`.
+- The current branch `am/am-add074-dkwcx4vk230k-fd246db5` is at `origin/master` (`62bb5d2`) with a clean worktree. No source-code changes are required.
+- `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass in this environment.
+- Plan:
+  1. Dev adds this fresh `docs(agents)` final-status entry to `AGENTS.md` and commits it as `docs(agents): 2026-08-23 final status and supersede stale PRs #145/#146` with `Closes #145, #146`. No source-code change is required.
+  2. QA runs the verification gate: `bash -n hart-domain-sync.sh hart-domain-hook.sh`, `shellcheck hart-domain-sync.sh hart-domain-hook.sh` if available, and manual dry-runs in directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, fast `--remove`, unquoted `#` in `CF_ENV`, and both literal and backslash-escaped backticks in foreign routers.
+  3. If the gate passes, close PRs #145 and #146 as superseded and the objective is resolved. If QA finds a regression or uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR.
+- Closes #145, #146
