@@ -60,9 +60,12 @@ only foreign `tcp:`/`udp:` sections stays clean.
 **A host already routed by someone else is left alone.** Before writing a router, the reconciler
 checks the `Host()` rules already claimed by routers it does not own (in the shared file, or in
 sibling files in `$DEST`) and skips that domain, naming the owner in the log. Two routers on one
-rule is a real misconfiguration — Traefik warns and which one serves is not yours to choose. DNS is
-still upserted for skipped domains: the record has to exist either way, the upsert is idempotent,
-and it is a useful backstop if the other tool's DNS lapses.
+rule is a real misconfiguration — Traefik warns and which one serves is not yours to choose. The
+check is case-insensitive and treats backticks, single quotes, and double quotes as equivalent
+delimiters, so a foreign router written as `Host('foo.example.com')` or `Host("foo.example.com")`
+is recognized just like ``Host(`foo.example.com`)``. DNS is still upserted for skipped domains:
+the record has to exist either way, the upsert is idempotent, and it is a useful backstop if the
+other tool's DNS lapses.
 
 ⚠️ File mode is only safe if the *other* writers of that file also preserve entries they do not own.
 [hotify](https://github.com/javimosch/hotify-cli) does since its `traefik-dual-mode` change; before
