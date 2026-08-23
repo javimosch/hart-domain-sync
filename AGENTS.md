@@ -1221,3 +1221,21 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
   2. QA runs the verification gate: `bash -n hart-domain-sync.sh hart-domain-hook.sh`, `shellcheck hart-domain-sync.sh hart-domain-hook.sh` if available, and manual dry-runs in directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, fast `--remove`, unquoted `#` in `CF_ENV`, and backslash-escaped backticks in foreign routers.
   3. If the gate passes, close PR #145 as superseded and the objective is resolved. If QA finds a regression or uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR.
 - Closes #145
+
+## 2026-08-23 architect plan (am-add074-dkweti1zvnrk-d9854d87)
+
+- `gh issue list --state open` returns `[]`; no open GitHub issues remain to fix.
+- `gh pr list --state open` returns PR #147 (`am/am-add074-dkwcx4vk230k-fd246db5`, `docs(agents): 2026-08-23 final status and supersede stale PRs #145/#146`) and PR #148 (`am/am-add074-dkwdtaj11i1w-280db1f8`, `fix(sync): make rule comparison case-insensitive in both modes`).
+  - PR #147 is `mergeStateStatus: DIRTY`/`CONFLICTING` and stale; its `AGENTS.md` plan is superseded by this run.
+  - PR #148 is `mergeStateStatus: CLEAN` and contains a real, unmerged robustness fix: the directory-mode and file-mode `Host()` rule collision checks should be case-insensitive and treat backticks, single quotes, and double quotes (including YAML-escaped variants) as equivalent delimiters.
+- The current branch `am-add074-dkweti1zvnrk-d9854d87` is at `origin/master` (`9276496`) with a clean worktree.
+- Plan:
+  1. Dev re-lands the three `fix(sync)` code changes and the `docs(readme)` update from PR #148's branch (`am/am-add074-dkwdtaj11i1w-280db1f8`) onto this branch as separate, clean conventional commits. Do not import the stale `AGENTS.md` final status from PR #148. The commits to land are:
+     - `fix(sync): make rule comparison case-insensitive in both modes`
+     - `fix(sync): normalize Host() delimiters in rule collision checks`
+     - `fix(sync): also unescape backslash-escaped quotes and YAML single-quote doubling`
+     - `docs(readme): document case-insensitive and delimiter-normalized rule matching`
+  2. Dev adds a fresh `docs(agents): 2026-08-23 final status and supersede stale PRs #147/#148` entry to `AGENTS.md` and commits it, closing both PRs.
+  3. QA runs the verification gate: `bash -n hart-domain-sync.sh hart-domain-hook.sh`, `shellcheck hart-domain-sync.sh hart-domain-hook.sh` if available, and manual dry-runs in directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, fast `--remove`, unquoted `#` in `CF_ENV`, and all common `Host()` rule styles (literal backticks, single quotes, double quotes, uppercase, backslash-escaped inner quotes in double-quoted YAML, and doubled single quotes in single-quoted YAML).
+  4. If the gate passes, close PR #147 and PR #148 as superseded and the objective is resolved. If QA finds a regression or uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR.
+- Relates-to #147, #148
