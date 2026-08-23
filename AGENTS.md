@@ -1197,3 +1197,15 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
 - Manual dry-runs in directory and file modes cover `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, fast `--remove`, unquoted `#` in `CF_ENV`, and both literal and backslash-escaped backticks in foreign routers.
 - The objective is resolved; no further action is needed.
 - Relates-to #139, #141
+
+## 2026-08-23 architect plan and final status (am-add074-dkwa4280ny18-8539aa5d)
+
+- `gh issue list --state open` returns `[]`; no open GitHub issues remain to fix.
+- `gh pr list --state open` returns only PR #143 (`am/am-add074-dkw9ayvqf8e1-306bd31e`, `docs(agents): 2026-08-23 final status and supersede stale PR #142`). It is `mergeStateStatus: DIRTY`/`CONFLICTING` and stale; its `AGENTS.md` plan is superseded by this run. This run adds a fresh final-status entry instead of importing the stale plan.
+- The current branch `am/am-add074-dkwa4280ny18-8539aa5d` is at `origin/master` (`0f8e16d`) with a clean worktree. No source-code changes are required; all recent robustness fixes are already in `hart-domain-sync.sh` and `hart-domain-hook.sh`.
+- `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass.
+- Plan:
+  1. Dev adds this fresh `docs(agents)` final-status entry to `AGENTS.md` and commits it as `docs(agents): 2026-08-23 final status and supersede stale PR #143` with `Closes #143`. No source-code change is required.
+  2. QA runs the verification gate: `bash -n hart-domain-sync.sh hart-domain-hook.sh`, `shellcheck hart-domain-sync.sh hart-domain-hook.sh` if available, and manual dry-runs in directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, fast `--remove`, unquoted `#` in `CF_ENV`, and backslash-escaped backticks in foreign routers.
+  3. If the gate passes, close PR #143 as superseded and the objective is resolved. If QA finds a regression or uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR.
+- Closes #143
