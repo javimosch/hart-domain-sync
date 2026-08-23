@@ -1123,3 +1123,17 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
 - The objective is resolved; PRs #132 and #135 are superseded by this branch.
 - Closes #132, #135
 
+## 2026-08-23 architect plan (am-add074-dkw5k7pcb9hf-54197a01)
+
+- `gh issue list --state open` returns `[]`; no open GitHub issues remain to fix.
+- `gh pr list --state open` returns PR #137 (`docs(readme): note file-mode non-http preservation and empty http cleanup`) and PR #138 (`docs(agents): add 2026-08-23 plan for stale PR #137`).
+- The current branch `am-add074-dkw5k7pcb9hf-54197a01` is at `origin/master` (`68d4a70`) with a clean worktree. Both PRs are stale and partially superseded.
+- Unmerged pieces to land:
+  1. `fix(cf): preserve # characters inside unquoted env values` — PR #138 contains a real `hart-domain-sync.sh` change that makes `strip_env_comment()` treat `#` as a comment only when it starts a word (preceded by whitespace), so unquoted values like `KEY=#foo` or `KEY=bar#baz` are preserved.
+  2. `docs(readme): note fast remove also cleans inert per-domain files` — PR #137's remaining unmerged note; the code is already in `hart-domain-sync.sh` line 322.
+- Plan:
+  1. Dev lands the above two changes as clean, separate conventional commits (do not import the stale AGENTS.md plans from either PR).
+  2. QA runs the verification gate: `bash -n hart-domain-sync.sh hart-domain-hook.sh`, `shellcheck` if installed, manual dry-runs in directory and file modes, and a CF_ENV regression with unquoted `#` values.
+  3. If the gate passes, add a fresh `docs(agents): 2026-08-23 final status` entry and close PR #137 and PR #138 as superseded. If QA finds a regression or uncovered edge case, open a focused issue and produce one small conventional-commit PR.
+- Relates-to #137, #138
+
