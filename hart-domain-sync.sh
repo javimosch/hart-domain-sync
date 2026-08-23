@@ -436,6 +436,13 @@ def strip_comment(s):
         out.append(c)
     return ''.join(out).rstrip()
 
+def qstrip(s):
+    s = s.strip()
+    if (s.startswith('"') and s.endswith('"')) or (s.startswith("'") and s.endswith("'")):
+        s = s[1:-1].strip()
+    # Match PYMERGE: backslash-escaped backticks are the same rule.
+    return s.replace('\\`', '`')
+
 for f in files:
     try: lines = open(f).read().split("\n")
     except OSError: continue
@@ -445,7 +452,7 @@ for f in files:
         if m: owner = m.group(1); continue
         m = rule_re.match(line)
         if m and owner and not owner.startswith(prefix):
-            rule = strip_comment(m.group(1)).strip('"\'').strip()
+            rule = qstrip(strip_comment(m.group(1)))
             print("%s\t%s" % (rule, owner))
 PYCLAIM
 )
@@ -724,8 +731,11 @@ for sec in SECTIONS:
 def qstrip(s):
     s = s.strip()
     if (s.startswith('"') and s.endswith('"')) or (s.startswith("'") and s.endswith("'")):
-        return s[1:-1].strip()
-    return s
+        s = s[1:-1].strip()
+    # Traefik rules use backticks as delimiters. Foreign files sometimes escape
+    # them with a backslash inside YAML double quotes; normalize so the same
+    # logical rule compares equal regardless of escaping style.
+    return s.replace('\\`', '`')
 
 def strip_comment(s):
     in_quote = None
