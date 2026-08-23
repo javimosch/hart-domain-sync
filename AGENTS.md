@@ -1236,3 +1236,28 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
 - Manual dry-runs in directory and file modes covered `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, fast `--remove` (code path unchanged), and all common `Host()` delimiter/escape styles in foreign routers.
 - The objective is resolved; PR #147 is superseded and no further action is needed.
 - Closes #147
+
+## 2026-08-23 architect plan (am-add074-dkwfoo4it2wi-75348662)
+
+- `gh issue list --state open` returns `[]`; no open GitHub issues remain to fix.
+- `gh pr list --state open` returns PR #147 (`am/am-add074-dkwcx4vk230k-fd246db5`, `docs(agents): 2026-08-23 final status and supersede stale PRs #145/#146`) and PR #149 (`am/am-add074-dkweti1zvnrk-d9854d87`, `fix(sync): normalize rule delimiters and case in both modes`). Both are `mergeStateStatus: DIRTY`/`CONFLICTING` and stale.
+  - PR #147 is a docs-only final-status for PRs #145 and #146, which are already `MERGED` into `origin/master` (`62bb5d2` and `9276496`); it is superseded by this branch.
+  - PR #149 re-lands rule delimiter/case normalization changes that are already in `origin/master` (`fdca14f` / PR #148). Its bundled `AGENTS.md` scaffolding is stale and must not be imported.
+- The current branch `am-add074-dkwfoo4it2wi-75348662` is at `origin/master` (`fdca14f`) with a clean worktree. `bash -n hart-domain-sync.sh hart-domain-hook.sh` passes; `shellcheck` is not installed in this environment.
+- Plan:
+  1. Dev adds a fresh `docs(agents): 2026-08-23 final status and supersede stale PRs #147/#149` entry to `AGENTS.md` and commits it with `Closes #147, #149`. No source-code change is required because all rule delimiter/case normalization fixes are already in `hart-domain-sync.sh` and the `README.md` note is already present.
+  2. QA runs the verification gate: `bash -n hart-domain-sync.sh hart-domain-hook.sh`, `shellcheck hart-domain-sync.sh hart-domain-hook.sh` if available, and manual dry-runs in directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, fast `--remove`, unquoted `#` in `CF_ENV`, and all common `Host()` rule styles (literal backticks, single quotes, double quotes, uppercase, backslash-escaped inner quotes in double-quoted YAML, and doubled single quotes in single-quoted YAML).
+  3. If the gate passes, close PR #147 and PR #149 as superseded and the objective is resolved. If QA finds a regression or uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR.
+- Relates-to #147, #149
+
+## 2026-08-23 final status and supersede stale PRs #147/#149 (am-add074-dkwfoo4it2wi-75348662)
+
+- `gh issue list --state open` returns `[]`; no open GitHub issues remain to fix.
+- `gh pr list --state open` returns PR #147 (`am/am-add074-dkwcx4vk230k-fd246db5`, `docs(agents): 2026-08-23 final status and supersede stale PRs #145/#146`) and PR #149 (`am/am-add074-dkweti1zvnrk-d9854d87`, `fix(sync): normalize rule delimiters and case in both modes`). Both are `mergeStateStatus: DIRTY`/`CONFLICTING` and stale.
+  - PR #147 is a docs-only final-status for PRs #145 and #146, which are already `MERGED` into `origin/master` (`62bb5d2` and `9276496`); it is superseded by this branch.
+  - PR #149 re-lands rule delimiter/case normalization changes that are already in `origin/master` (`fdca14f` / PR #148). Its bundled `AGENTS.md` scaffolding and `README.md` note are stale and must not be imported.
+- The current branch `am-add074-dkwfoo4it2wi-75348662` is at `origin/master` (`fdca14f`) with a clean worktree. No source-code changes are required; the rule delimiter/case normalization fixes and the `README.md` note are already present.
+- `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass.
+- QA ran the verification gate covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, fast `--remove`, unquoted `#` in `CF_ENV`, and all common `Host()` rule styles (literal backticks, single quotes, double quotes, uppercase, backslash-escaped inner quotes in double-quoted YAML, and doubled single quotes in single-quoted YAML).
+- The objective is resolved; PR #147 and PR #149 are superseded and can be closed.
+- Closes #147, #149
