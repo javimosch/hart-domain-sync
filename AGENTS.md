@@ -1137,3 +1137,16 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
   3. If the gate passes, add a fresh `docs(agents): 2026-08-23 final status` entry and close PR #137 and PR #138 as superseded. If QA finds a regression or uncovered edge case, open a focused issue and produce one small conventional-commit PR.
 - Relates-to #137, #138
 
+## 2026-08-23 final status and close stale PRs #137/#138 (am-add074-dkw5k7pcb9hf-54197a01)
+
+- `gh issue list --state open` returns `[]`; no open GitHub issues remain to fix.
+- `gh pr list --state open` returns PR #137 (`am/am-add074-dkvl24vrvjc1-8476068a`, `docs(readme): note file-mode non-http preservation and empty http cleanup`) and PR #138 (`am/am-add074-dkw4o2bb2pfv-5c41f0ed`, `docs(agents): add 2026-08-23 plan for stale PR #137`). Both are stale and superseded by this run.
+- The current branch `am-add074-dkw5k7pcb9hf-54197a01` is at `origin/master` (`68d4a70`) with two clean re-landed improvements plus this final-status:
+  - `fix(cf): preserve unquoted # inside cloudflare env values` — `strip_env_comment()` only treats `#` as a shell-style comment when it begins a word, keeping `#` characters inside unquoted Cloudflare API tokens and other values.
+  - `docs(readme): note fast remove also cleans inert per-domain files` — documents that file-mode `--remove` also deletes the stale per-domain yml from `$DEST` so hook-driven removals stay complete.
+- `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass.
+- A targeted `cf_val` unit test with an env file confirms unquoted `#` at the start, middle, and end of values is preserved, while whitespace-prefixed `#` still starts a trailing comment.
+- Manual dry-runs in file and directory modes with mixed-case hart entries (`Foo.Example.com`), `WILDCARD_DOMAIN=wild.example.com`, `WILDCARD_INSTANCE_DOMAIN=inst.example.com`, and a `tcp:` top-level section produced the expected per-domain/wildcard files, correct foreign section preservation, and a clean merged single-file output. File-mode fast `--remove` also removed the inert per-domain file and dropped the bare `http:` block when the removed hart key was the last one.
+- The objective is resolved; PRs #137 and #138 are superseded by this branch.
+- Closes #137, #138
+
