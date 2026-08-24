@@ -1303,3 +1303,18 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
 - QA runs the verification gate: manual dry-runs in directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, fast `--remove`, and the #152 edge cases (router/section key lines with inline comments and backtick-quoted `Host()` rules containing `#`).
 - If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the objective is resolved and no further action is needed.
 - Relates-to #152, #153, #154
+
+## 2026-08-24 final status and close stale PRs #156/#157 (am-add074-dkx4m0q30e5t-0f2ac62a)
+
+- `gh issue list --state open` returns `[]`; no open GitHub issues remain to fix.
+- `gh pr list --state open` returns PR #156 (`am/am-add074-dkx2tpcg2fxq-2664488f`, `docs(agents): 2026-08-24 plan for PR #155 escaped-quote edge case`) and PR #157 (`am/am-add074-dkx3pv001tsc-34506e0d`, `docs(agents): 2026-08-24 final status and close stale PR #156`). Both are stale and superseded by this branch:
+  - PR #156 re-lands the escaped-quote inline-YAML comment handling that is already in `origin/master` (`27ae7ce` / PR #155).
+  - PR #157 contains the same `LC_ALL=C` guard for `strip_env_comment()` that this branch lands.
+- This branch adds two small conventional commits on top of `origin/master` (`27ae7ce`):
+  - `fix(sync): force LC_ALL=C inside strip_env_comment` — the `[[:space:]]` bracket class in the unquoted-value comment test now runs under `LC_ALL=C`, so a non-English caller locale cannot alter which characters are treated as whitespace before a `#`.
+  - `docs(readme): note locale-independent CF_ENV parsing` — the `CF_ENV` row now documents that the file is parsed with `LC_ALL=C` for locale-independent whitespace and comment handling.
+- `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass.
+- QA runs the verification gate: manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, fast `--remove`, escaped-quote edge cases, and `CF_ENV` values containing `#` in unquoted or quoted values under a non-C locale (e.g., `LC_ALL=en_US.UTF-8`).
+- If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the objective is resolved and PRs #156 and #157 are superseded and can be closed.
+- Closes #156, #157
+- Relates-to #152
