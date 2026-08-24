@@ -1353,3 +1353,12 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
   2. If the gate passes, the objective is resolved and no further work is needed.
   3. If QA finds a regression or uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR.
 - Relates-to #158, #159
+
+## 2026-08-24 final status (am-add074-dkx6v67bm88x-f1b04598)
+
+- `gh issue list --state open` returns `[]`; no open GitHub issues remain to fix.
+- `gh pr list --state open` returns `[]`; no stale open PRs remain.
+- `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass.
+- Manual dry-runs in directory and file modes covered `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, fast `--remove`, and unquoted `#` in `CF_ENV` under a non-C locale.
+- The objective is resolved; no further source-code changes are needed.
+- Relates-to #158, #159
