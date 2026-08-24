@@ -1316,3 +1316,14 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
   - router key lines with inline comments and rules containing escaped/doubled quotes
 - If QA finds a regression, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the objective is resolved and PR #156 is superseded and can be closed.
 - Closes #156
+
+## 2026-08-24 architect plan (am-add074-dkx5dkwgv4so-93e9c27f)
+
+- `gh issue list --state open` returns `[]`; no open GitHub issues remain to fix.
+- `gh pr list --state open` returns only PR #158 (`am/am-add074-dkx4m0q30e5t-0f2ac62a`, `fix(sync): force LC_ALL=C inside strip_env_comment`). It is merge-conflicting and stale. Its core code change — adding `LC_ALL=C` to the `strip_env_comment()` local scope so the unquoted-value `[[ :space: ]]` test is locale-independent — is already present on `origin/master` (`f5c47b3` / PR #157). The only unmerged improvement from PR #158 is its `README.md` note about `CF_ENV` being parsed under `LC_ALL=C`.
+- Plan:
+  1. Dev re-lands the unmerged README note from PR #158 as a clean `docs(readme): note locale-independent CF_ENV parsing` commit (do not import the stale `AGENTS.md` plan from PR #158). No source-code change to `hart-domain-sync.sh` is required.
+  2. QA runs the verification gate: `bash -n hart-domain-sync.sh hart-domain-hook.sh`, `shellcheck hart-domain-sync.sh hart-domain-hook.sh` if available, and manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, fast `--remove`, escaped-quote edge cases, and `CF_ENV` values containing `#` under a non-C locale (e.g., `LC_ALL=en_US.UTF-8`).
+  3. If the gate passes, add a fresh `docs(agents): 2026-08-24 final status and close stale PR #158` entry and close PR #158 as superseded. If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR.
+- Relates-to #152
+- Closes #158
