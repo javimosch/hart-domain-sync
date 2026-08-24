@@ -100,7 +100,7 @@ least set `BOX_IP`.
 | `SERVICE_URL` | `http://127.0.0.1:8799` | how Traefik reaches hart |
 | `ENTRYPOINT` | `websecure` | Traefik TLS entrypoint name |
 | `CERT_RESOLVER` | `letsencrypt` | Traefik cert resolver name |
-| `CF_ENV` | `/etc/traefik/cloudflare.env` | file holding `CF_API_EMAIL` + `CF_API_KEY` (Cloudflare global key); supports `export`, whitespace around `=`, quotes, and trailing comments |
+| `CF_ENV` | `/etc/traefik/cloudflare.env` | file holding `CF_API_EMAIL` + `CF_API_KEY` (Cloudflare global key); parsed with `LC_ALL=C` so non-English locales don't misclassify whitespace; supports `export`, whitespace around `=`, quotes, and trailing comments |
 | `MANAGE_DNS` | `1` | `0` = don't touch Cloudflare DNS at all |
 | `WILDCARD_DOMAIN` | *(empty)* | e.g. `hart.intrane.fr` — subdomains are routed by one `HostRegexp` router instead of per-domain files |
 | `WILDCARD_INSTANCE_DOMAIN` | *(empty)* | e.g. `hart.intrane.fr` — subdomains are covered by an externally managed wildcard; skip per-domain files and DNS |
