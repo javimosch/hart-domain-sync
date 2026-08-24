@@ -1327,3 +1327,15 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
   3. If the gate passes, add a fresh `docs(agents): 2026-08-24 final status and close stale PR #158` entry and close PR #158 as superseded. If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR.
 - Relates-to #152
 - Closes #158
+
+## 2026-08-24 final status and close stale PR #158 (am-add074-dkx5dkwgv4so-93e9c27f)
+
+- `gh issue list --state open` returns `[]`; no open GitHub issues remain to fix.
+- `gh pr list --state open` returns only PR #158 (`am/am-add074-dkx4m0q30e5t-0f2ac62a`, `fix(sync): force LC_ALL=C inside strip_env_comment`). It is stale and merge-conflicting:
+  - Its `hart-domain-sync.sh` change (`LC_ALL=C` inside `strip_env_comment()`) is already present on `origin/master` (`f5c47b3` / PR #157).
+  - Its `README.md` note about `CF_ENV` being parsed under `LC_ALL=C` has been re-landed on this branch as `docs(readme): note locale-independent CF_ENV parsing`.
+- `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass.
+- Manual dry-runs in both directory and file modes covered `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, fast `--remove`, and `CF_ENV` values containing `#` under a non-English locale (`LC_ALL=en_US.UTF-8`).
+- PR #158 is superseded and can be closed.
+- Closes #158
+- Relates-to #152
