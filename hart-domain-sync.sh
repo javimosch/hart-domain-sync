@@ -274,9 +274,8 @@ for line in text.split("\n"):
         skip = False
         out.append(line)
         continue
-    if top == "http" and section in http_sections and indent == 4:
-        m = re.match(r"^([\w.-]+):", t)
-        if m and m.group(1) == key:
+    if top == "http" and section in http_sections and indent == 4 and t.endswith(":") and " " not in t:
+        if t[:-1] == key:
             skip = True
             changed = True
             continue
@@ -294,7 +293,7 @@ while i < n:
         i += 1
         has_key = False
         while i < n and (out[i] == "" or out[i].startswith(" ") or out[i].startswith("\t")):
-            if re.match(r"^    [\w.-]+:\s*(#.*)?$", out[i]):
+            if re.match(r"^    [\w.-]+:\s*$", out[i]):
                 has_key = True
             i += 1
         if has_key:
