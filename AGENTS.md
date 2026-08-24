@@ -1292,3 +1292,27 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
 - If the gate passes, close PR #153 as superseded and the original objective is resolved. If QA finds an uncovered edge case, open a focused issue and produce one small conventional-commit PR.
 - Relates-to #152
 - Closes #153
+
+## 2026-08-24 architect plan (am-add074-dkx2tpcg2fxq-2664488f)
+
+- `gh issue list --state open` returns `[]`; no open GitHub issues remain to fix.
+- `gh pr list --state open` returns only PR #155 (`am/am-add074-dkx1xjs5onct-fcccc8b3`, `docs(agents): 2026-08-24 final status and confirm no open issues`). It bundles a stale AGENTS.md final-status with a real, unmerged `fix(sync)` edge-case.
+- `origin/master` (commit `5d9863f`, PR #154) already contains the core issue #152 fixes: `PYCLAIM`, `PYMERGE`, and `PYREM` all strip unquoted inline YAML comments and treat `` ` ``, single quotes, and double quotes as equivalent delimiters. What is still missing from `origin/master` is handling of escaped quote characters inside YAML quoted strings:
+  - backslash-escaped double quotes (`\"`) inside a double-quoted YAML value can cause `strip_comment()` to close the quote early and treat a later `#` as an inline comment;
+  - doubled single quotes (`''`) inside a single-quoted YAML value can cause `strip_comment()` to close the quote early.
+  Both can truncate a rule such as `rule: "Host(\`foo#bar.com\`)" # comment` or `rule: 'Host(''foo.com'')' # comment`.
+- Dev should re-land only the `hart-domain-sync.sh` and `README.md` changes from PR #155 as clean, self-contained conventional commits on this branch, **without** importing PR #155's stale `AGENTS.md` plan:
+  1. `fix(sync): preserve escaped quotes in inline YAML comment stripper` — update all three `strip_comment()` Python helpers to keep `\"` and `''` intact while scanning for unquoted `#`.
+  2. `docs(readme): note inline comment and escaped quote handling` — add the one-line README note (can be squashed into the fix commit if desired).
+  3. If the unmerged edge case is considered off-objective, open a focused GitHub issue first and reference it with `Fixes #<new>` and `Relates-to #152`; otherwise use `Relates-to #152, #155`.
+- `bash -n hart-domain-sync.sh hart-domain-hook.sh` passes; `shellcheck hart-domain-sync.sh hart-domain-hook.sh` passes (verified on this branch).
+- QA runs the verification gate:
+  - `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` (if installed)
+  - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, and fast `--remove`
+  - regression for the escaped-quote edge case:
+    - foreign router with `rule: "Host(\`foo#bar.com\`)" # comment`
+    - foreign router with `rule: 'Host(''foo.com'')' # comment`
+    - router key line like `my-router:  # comment` with a rule containing escaped quotes
+    - confirm `PYCLAIM` and `PYMERGE` detect the rule correctly and `PYREM` removes by key correctly
+- If the gate passes, close PR #155 as superseded; if a regression is found, open a focused GitHub issue and produce one small conventional-commit PR.
+- Relates-to #152, #155
