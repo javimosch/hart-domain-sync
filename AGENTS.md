@@ -1261,3 +1261,15 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
 - QA ran the verification gate covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, fast `--remove`, unquoted `#` in `CF_ENV`, and all common `Host()` rule styles (literal backticks, single quotes, double quotes, uppercase, backslash-escaped inner quotes in double-quoted YAML, and doubled single quotes in single-quoted YAML).
 - The objective is resolved; PR #147 and PR #149 are superseded and can be closed.
 - Closes #147, #149
+
+## 2026-08-24 final status and no open issues (am-add074-dkwzalm9mfvm-9ca76a52)
+
+- `gh issue list --state open` returns `[]`; no open GitHub issues remain to fix.
+- `gh pr list --state open` returns `[]`; no stale open PRs remain to supersede.
+- The current branch `am-add074-dkwzalm9mfvm-9ca76a52` is at `origin/master` (`d8bd207`) with three clean robustness commits:
+  1. `fix(hook): guard against unset variables and pipeline failures` — `hart-domain-hook.sh` now runs with `set -uo pipefail` so unbound variables and failing pipelines do not silently pass through.
+  2. `fix(sync): strip comments before matching foreign router names` — the directory/file-mode `Host()` collision scanner (PYCLAIM) strips inline comments from the router-name line before matching, so a foreign router written as `foo-router:  # comment` is still recognized as the owner.
+  3. `fix(sync): tolerate inline comments on file-mode router keys` — the file-mode fast-remove (PYREM) now matches a router key by its name before the colon and counts keys with trailing comments when deciding whether to drop a bare `http:` block.
+- `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass.
+- Manual dry-runs in directory and file modes covered `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, fast `--remove`, and router keys/rules with inline comments.
+- The objective is resolved; no further action is needed.
