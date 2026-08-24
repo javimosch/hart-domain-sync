@@ -1270,3 +1270,25 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
 - `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass.
 - QA runs the verification gate: manual dry-runs in directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, fast `--remove`, unquoted `#` in `CF_ENV`, and all common `Host()` rule styles (literal backticks, single quotes, double quotes, uppercase, backslash-escaped inner quotes in double-quoted YAML, and doubled single quotes in single-quoted YAML).
 - If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the objective is resolved and no further action is needed.
+
+## 2026-08-24 architect plan (am-add074-dkx12x1pjrpe-1d545d3a)
+
+- `gh issue list --state open` returns `[]`; no open GitHub issues remain to fix.
+- `gh pr list --state open` returns only PR #153 (`am/am-add074-dkx06rei94zq-35f9552d`, `docs(agents): 2026-08-24 final status and close stale PR #151`). Its title says `docs(agents)` but the diff also modifies `hart-domain-sync.sh` to fully address issue #152 (now closed). Its bundled `AGENTS.md` plan is stale and must not be imported.
+- Current `origin/master` (`1d90ad2`) only partially addresses issue #152: the `PYCLAIM` and `PYMERGE` rule-line `strip_comment()` helpers strip unquoted inline `#`, but they do not treat backticks as quote delimiters and they do not strip comments before router/section/key name matching. The `PYREM` fast-remove parser has no `strip_comment()` helper at all, so router key lines with inline comments are not recognized or removed.
+- Dev should:
+  1. Open a focused GitHub issue for the unmerged #152 edge case: inline YAML comments and backtick quote delimiters in `PYCLAIM`, `PYMERGE`, and `PYREM` key/section/rule parsing.
+  2. Re-land the `hart-domain-sync.sh` code changes from PR #153 as one or two clean, self-contained conventional commits **without** importing the stale `AGENTS.md` plan. The commits must:
+     - Add `` ` `` to the quote-delimiter set in every `strip_comment()` / `clean()` helper so `Host(`foo.com`)` is not truncated at an unquoted `#`.
+     - Apply quote-aware comment stripping before router/section/key detection in `PYCLAIM` (`name_re`), `PYMERGE` (`split_http`), and `PYREM` (`t = line.strip()` key detection and `http:` detection).
+     - Apply comment stripping to the `PYREM` empty-block cleanup regex (`^    [\w.-]+:\s*$`).
+  3. Reference the new issue in the commit message (`Fixes #<new>`) and include `Relates-to #152` in the commit body.
+- QA runs the verification gate:
+  - `bash -n hart-domain-sync.sh hart-domain-hook.sh`
+  - `shellcheck hart-domain-sync.sh hart-domain-hook.sh` (if installed)
+  - manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, and fast `--remove`
+  - regression for the new fix: foreign routers with `rule: "Host(`foo.com`)" # comment` and router key lines like `my-router:  # comment`; confirm `PYCLAIM`/`PYMERGE` detect the rule and `PYREM` removes by key correctly. Also test rules containing a quoted `#` inside backticks, e.g. `rule: "Host(`foo#bar.com`)"`, to ensure `#` inside backtick quotes is not mistaken for an inline comment.
+  - regression for the broader inline comment fix: a router key line `my-router:  # comment` followed by a `rule:` line; confirm the scanner still associates the rule with the correct owner and the file-mode merge preserves the block correctly.
+- If the gate passes, close PR #153 as superseded and the original objective is resolved. If QA finds an uncovered edge case, open a focused issue and produce one small conventional-commit PR.
+- Relates-to #152
+- Closes #153
