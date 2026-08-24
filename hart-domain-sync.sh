@@ -665,6 +665,24 @@ import glob, os, sys, tempfile
 stage, target, prefix = os.environ["STAGE"], os.environ["TARGET"], os.environ["PREFIX"]
 SECTIONS = ("routers", "services", "middlewares")
 
+def strip_comment(s):
+    in_quote = None
+    out = []
+    for c in s:
+        if in_quote:
+            if c == in_quote:
+                in_quote = None
+            out.append(c)
+            continue
+        if c in ('"', "'", '`'):
+            in_quote = c
+            out.append(c)
+            continue
+        if c == '#':
+            break
+        out.append(c)
+    return ''.join(out).rstrip()
+
 def split_http(text):
     """Return (sections, rest). sections is {section: {key: raw block}} for http;
        rest is a list of (name, raw_block) for any other top-level sections,
@@ -682,7 +700,8 @@ def split_http(text):
             rest.append((rest_name, "\n".join(rest_buf).rstrip("\n") + "\n"))
         rest_name, rest_buf = None, []
     for line in text.split("\n"):
-        t = line.strip()
+        raw = line.strip()
+        t = strip_comment(line).strip()
         indent = len(line) - len(line.lstrip(" "))
         if indent == 0 and t and t.endswith(":"):
             flush(); flush_rest()
@@ -696,14 +715,14 @@ def split_http(text):
         if rest_name:
             rest_buf.append(line)
             continue
-        if section is None and t == "":
+        if section is None and raw == "":
             continue
         if indent == 2 and t.endswith(":") and not t.startswith("-"):
             flush(); section = t[:-1]; continue
         if section is None: continue
         if indent == 4 and t.endswith(":") and " " not in t:
             flush(); key = t[:-1]; buf = [line]; continue
-        if key and (indent > 4 or not t):
+        if key and (indent > 4 or not raw):
             buf.append(line)
     flush(); flush_rest()
     return out, rest
@@ -756,24 +775,6 @@ def qstrip(s):
     if outer == "'":
         s = s.replace("''", "'")
     return s.lower().replace("'", '`').replace('"', '`')
-
-def strip_comment(s):
-    in_quote = None
-    out = []
-    for c in s:
-        if in_quote:
-            if c == in_quote:
-                in_quote = None
-            out.append(c)
-            continue
-        if c in ('"', "'"):
-            in_quote = c
-            out.append(c)
-            continue
-        if c == '#':
-            break
-        out.append(c)
-    return ''.join(out).rstrip()
 
 def host_rules(sections):
     rules = {}
