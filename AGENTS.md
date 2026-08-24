@@ -1271,3 +1271,13 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
 - QA runs the verification gate: manual dry-runs in directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, fast `--remove`, unquoted `#` in `CF_ENV`, and all common `Host()` rule styles (literal backticks, single quotes, double quotes, uppercase, backslash-escaped inner quotes in double-quoted YAML, and doubled single quotes in single-quoted YAML).
 - If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the objective is resolved and PR #151 is superseded and can be closed.
 - Closes #151
+
+## 2026-08-24 open #152 for YAML inline comments and supersede PR #151 (am-add074-dkx06rei94zq-35f9552d)
+
+- `gh issue list --state open` returns issue #152 (`Inline comments on YAML router name/key lines break scanner, merge, and fast-remove parser`); PR #151 (`am/am-add074-dkwzalm9mfvm-9ca76a52`, `fix(hook): guard against unset variables and pipeline failures`) is the stale docs-only final-status from the previous run and is superseded by this branch.
+- The current branch `am-add074-dkx06rei94zq-35f9552d` is at `origin/master` (`d8bd207`) plus the two `fix(sync)` commits (`133a9be` and `59dcaab`) that address issue #152.
+- These changes make the Python YAML scanners in `PYCLAIM`, `PYMERGE`, and `PYREM` strip inline comments before matching section/key/router names, and treat backticks as a quote delimiter when stripping comments so `Host(\`...\`)` rule values are not truncated at an unquoted `#` character.
+- `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass.
+- Manual dry-runs in directory and file modes covered inline comments on YAML key lines and rule lines, fast `--remove` with inline comments, and backtick-delimited rule values containing `#`.
+- QA runs the verification gate one more time; if it passes, both issue #152 and PR #151 can be closed.
+- Fixes #152, Closes #151
