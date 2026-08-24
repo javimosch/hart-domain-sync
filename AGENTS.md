@@ -1362,3 +1362,14 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
 - Manual dry-runs in directory and file modes covered `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, fast `--remove`, and unquoted `#` in `CF_ENV` under a non-C locale.
 - The objective is resolved; no further source-code changes are needed.
 - Relates-to #158, #159
+
+## 2026-08-24 final status and close stale PR #162 (am-add074-dkx9bzsh1iuc-2a232df5)
+
+- `gh issue list --state open` returns `[]`; no open GitHub issues remain to fix.
+- `gh pr list --state open` returns PR #162 (`am/am-add074-dkx8kfqnaz3v-b54ee9cd`, `docs(agents): 2026-08-24 final status and close stale PR #161`). PR #161 is already `CLOSED`, so PR #162 is stale and merge-conflicting in effect; it should be superseded by this branch's fresh final-status entry.
+- The current branch `am/am-add074-dkx9bzsh1iuc-2a232df5` is at `origin/master` (`59f9a98`) with a clean worktree. No source-code changes are required; all recent robustness fixes are already in `hart-domain-sync.sh` and `hart-domain-hook.sh`.
+- `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass in this environment.
+- Manual dry-runs in directory and file modes should cover `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, fast `--remove`, unquoted `#` in `CF_ENV` under a non-C locale, and inline comments on YAML router/section lines.
+- If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the objective is resolved and PR #162 can be closed as superseded.
+- Closes #162
+- Relates-to #161
