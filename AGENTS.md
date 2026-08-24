@@ -1303,3 +1303,16 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
 - QA runs the verification gate: manual dry-runs in directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, fast `--remove`, and the #152 edge cases (router/section key lines with inline comments and backtick-quoted `Host()` rules containing `#`).
 - If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the objective is resolved and no further action is needed.
 - Relates-to #152, #153, #154
+
+## 2026-08-24 final status and close stale PR #156 (am-add074-dkx3pv001tsc-34506e0d)
+
+- `gh issue list --state open` returns `[]`; no open GitHub issues remain to fix.
+- `gh pr list --state open` returns PR #156 (`am/am-add074-dkx2tpcg2fxq-2664488f`, `docs(agents): 2026-08-24 plan for PR #155 escaped-quote edge case`). It bundles a stale `AGENTS.md` plan with `hart-domain-sync.sh` and `README.md` changes for the escaped-quote edge case that are already in `origin/master` (`27ae7ce` / PR #155).
+- The current branch `am/am-add074-dkx3pv001tsc-34506e0d` is at `origin/master` (`27ae7ce`) with a clean worktree. No source-code changes are required; `PYCLAIM`, `PYMERGE`, and `PYREM` already use a quote-aware `strip_comment()` that treats backticks, single quotes, and double quotes as delimiters and also preserves backslash-escaped double quotes and doubled single quotes inside YAML quoted strings.
+- `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` (if installed) should be run by QA.
+- QA runs the verification gate: manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, fast `--remove`, and the escaped-quote edge cases:
+  - `rule: "Host(\`foo#bar.com\`)" # comment`
+  - `rule: 'Host(''foo.com'')' # comment`
+  - router key lines with inline comments and rules containing escaped/doubled quotes
+- If QA finds a regression, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the objective is resolved and PR #156 is superseded and can be closed.
+- Closes #156
