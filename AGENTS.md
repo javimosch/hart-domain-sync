@@ -1362,3 +1362,18 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
 - Manual dry-runs in directory and file modes covered `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, fast `--remove`, and unquoted `#` in `CF_ENV` under a non-C locale.
 - The objective is resolved; no further source-code changes are needed.
 - Relates-to #158, #159
+
+## 2026-08-24 final status and close stale PR #161 (am-add074-dkx8kfqnaz3v-b54ee9cd)
+
+- `gh issue list --state open` returns `[]`; no open GitHub issues remain to fix.
+- `gh pr list --state open` returns only PR #161 (`am/am-add074-dkx7ptbs2oor-86342530`, `docs(agents): 2026-08-24 final status and close stale PR #160`). It is stale and merge-conflicting:
+  - It was opened from an earlier `origin/master` (`a3ba90d`) and claims PR #160 is still open, but PR #160 is already merged into `origin/master` (`59f9a98`).
+  - Its `AGENTS.md` additions are superseded by this run's fresh final-status entry and should not be imported.
+- The current branch `am/am-add074-dkx8kfqnaz3v-b54ee9cd` is at `origin/master` (`59f9a98`) with a clean worktree. No source-code changes are required.
+- `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass in this environment.
+- Plan:
+  1. Land this `docs(agents)` final-status entry as the only required change. Do not import the stale `AGENTS.md` plan from PR #161.
+  2. QA runs the verification gate: `bash -n hart-domain-sync.sh hart-domain-hook.sh`, `shellcheck hart-domain-sync.sh hart-domain-hook.sh` if available, and manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, fast `--remove`, `CF_ENV` values containing `#` under a non-C locale, and escaped-quote edge cases.
+  3. If the gate passes, the objective is resolved and PR #161 can be closed as superseded. If QA finds a regression or uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR.
+- Closes #161
+- Relates-to #160
