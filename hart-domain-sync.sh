@@ -269,7 +269,7 @@ def strip_comment(s):
                 in_quote = None
             out.append(c)
             continue
-        if c in ('"', "'"):
+        if c in ('"', "'", '`'):
             in_quote = c
             out.append(c)
             continue
@@ -447,7 +447,7 @@ def strip_comment(s):
                 in_quote = None
             out.append(c)
             continue
-        if c in ('"', "'"):
+        if c in ('"', "'", '`'):
             in_quote = c
             out.append(c)
             continue
@@ -711,7 +711,7 @@ def split_http(text):
                     in_quote = None
                 out.append(c)
                 continue
-            if c in ('"', "'"):
+            if c in ('"', "'", '`'):
                 in_quote = c
                 out.append(c)
                 continue
@@ -805,7 +805,7 @@ def strip_comment(s):
                 in_quote = None
             out.append(c)
             continue
-        if c in ('"', "'"):
+        if c in ('"', "'", '`'):
             in_quote = c
             out.append(c)
             continue
