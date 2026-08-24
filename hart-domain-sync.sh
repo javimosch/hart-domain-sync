@@ -458,7 +458,7 @@ for f in files:
     except OSError: continue
     owner = None
     for line in lines:
-        m = name_re.match(line)
+        m = name_re.match(strip_comment(line))
         if m: owner = m.group(1); continue
         m = rule_re.match(line)
         if m and owner and not owner.startswith(prefix):
