@@ -1292,3 +1292,14 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
 - If the gate passes, close PR #153 as superseded and the original objective is resolved. If QA finds an uncovered edge case, open a focused issue and produce one small conventional-commit PR.
 - Relates-to #152
 - Closes #153
+
+## 2026-08-24 final status and confirm no open issues (am-add074-dkx1xjs5onct-fcccc8b3)
+
+- `gh issue list --state open` returns `[]`; no open GitHub issues remain to fix.
+- `gh pr list --state open` returns `[]`; no stale open PRs remain to supersede.
+- The current branch `am/am-add074-dkx1xjs5onct-fcccc8b3` is at `origin/master` (`5d9863f`) with a clean worktree. PR #154 has been merged into `origin/master` and supersedes the stale PR #153 plan; its `hart-domain-sync.sh` changes resolve the #152 edge case (quote-aware inline comment stripping in `PYCLAIM`, `PYMERGE`, and `PYREM`, with backticks treated as quote delimiters).
+- No additional source-code changes are required.
+- `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` (if installed) should be run by QA.
+- QA runs the verification gate: manual dry-runs in directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, fast `--remove`, and the #152 edge cases (router/section key lines with inline comments and backtick-quoted `Host()` rules containing `#`).
+- If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the objective is resolved and no further action is needed.
+- Relates-to #152, #153, #154

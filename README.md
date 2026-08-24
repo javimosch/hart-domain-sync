@@ -63,7 +63,9 @@ sibling files in `$DEST`) and skips that domain, naming the owner in the log. Tw
 rule is a real misconfiguration — Traefik warns and which one serves is not yours to choose. The
 check is case-insensitive and treats backticks, single quotes, and double quotes as equivalent
 delimiters, so a foreign router written as `Host('foo.example.com')` or `Host("foo.example.com")`
-is recognized just like ``Host(`foo.example.com`)``. DNS is still upserted for skipped domains:
+is recognized just like ``Host(`foo.example.com`)``. It also ignores unquoted inline YAML comments
+and preserves escaped quotes, so a rule line like `rule: "Host(`foo.example.com`)" # my router`
+does not stop at the `#`. DNS is still upserted for skipped domains:
 the record has to exist either way, the upsert is idempotent, and it is a useful backstop if the
 other tool's DNS lapses.
 

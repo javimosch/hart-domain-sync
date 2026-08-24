@@ -261,21 +261,32 @@ except FileNotFoundError:
 http_sections = ("routers", "services", "middlewares")
 
 def strip_comment(s):
+    i, n = 0, len(s)
     in_quote = None
     out = []
-    for c in s:
+    while i < n:
+        c = s[i]
         if in_quote:
+            # Doubled single quote inside a single-quoted YAML string.
+            if in_quote == "'" and c == "'" and i + 1 < n and s[i + 1] == "'":
+                out.append("''"); i += 2; continue
+            # Backslash-escaped quote inside a double-quoted YAML string.
+            if c == '\\' and i + 1 < n and s[i + 1] == in_quote and in_quote == '"':
+                out.append('\\' + in_quote); i += 2; continue
             if c == in_quote:
                 in_quote = None
             out.append(c)
+            i += 1
             continue
         if c in ('"', "'", '`'):
             in_quote = c
             out.append(c)
+            i += 1
             continue
         if c == '#':
             break
         out.append(c)
+        i += 1
     return ''.join(out).rstrip()
 
 out, top, section, skip, changed = [], None, None, False, False
@@ -438,21 +449,32 @@ name_re = re.compile(r"^    ([\w.-]+):\s*$")
 rule_re = re.compile(r"^\s*rule:\s*(.+?)\s*$")
 
 def strip_comment(s):
+    i, n = 0, len(s)
     in_quote = None
     out = []
-    for c in s:
+    while i < n:
+        c = s[i]
         if in_quote:
+            # Doubled single quote inside a single-quoted YAML string.
+            if in_quote == "'" and c == "'" and i + 1 < n and s[i + 1] == "'":
+                out.append("''"); i += 2; continue
+            # Backslash-escaped quote inside a double-quoted YAML string.
+            if c == '\\' and i + 1 < n and s[i + 1] == in_quote and in_quote == '"':
+                out.append('\\' + in_quote); i += 2; continue
             if c == in_quote:
                 in_quote = None
             out.append(c)
+            i += 1
             continue
         if c in ('"', "'", '`'):
             in_quote = c
             out.append(c)
+            i += 1
             continue
         if c == '#':
             break
         out.append(c)
+        i += 1
     return ''.join(out).rstrip()
 
 def qstrip(s):
@@ -686,21 +708,32 @@ stage, target, prefix = os.environ["STAGE"], os.environ["TARGET"], os.environ["P
 SECTIONS = ("routers", "services", "middlewares")
 
 def strip_comment(s):
+    i, n = 0, len(s)
     in_quote = None
     out = []
-    for c in s:
+    while i < n:
+        c = s[i]
         if in_quote:
+            # Doubled single quote inside a single-quoted YAML string.
+            if in_quote == "'" and c == "'" and i + 1 < n and s[i + 1] == "'":
+                out.append("''"); i += 2; continue
+            # Backslash-escaped quote inside a double-quoted YAML string.
+            if c == '\\' and i + 1 < n and s[i + 1] == in_quote and in_quote == '"':
+                out.append('\\' + in_quote); i += 2; continue
             if c == in_quote:
                 in_quote = None
             out.append(c)
+            i += 1
             continue
         if c in ('"', "'", '`'):
             in_quote = c
             out.append(c)
+            i += 1
             continue
         if c == '#':
             break
         out.append(c)
+        i += 1
     return ''.join(out).rstrip()
 
 def split_http(text):
