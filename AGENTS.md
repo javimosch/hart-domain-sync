@@ -1261,3 +1261,12 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
 - QA ran the verification gate covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, fast `--remove`, unquoted `#` in `CF_ENV`, and all common `Host()` rule styles (literal backticks, single quotes, double quotes, uppercase, backslash-escaped inner quotes in double-quoted YAML, and doubled single quotes in single-quoted YAML).
 - The objective is resolved; PR #147 and PR #149 are superseded and can be closed.
 - Closes #147, #149
+
+## 2026-08-24 final status and no open issues (am-add074-dkwzalm9mfvm-9ca76a52)
+
+- `gh issue list --state open` returns `[]`; no open GitHub issues remain to fix.
+- `gh pr list --state open` returns `[]`; no stale open PRs remain to supersede.
+- The current branch `am-add074-dkwzalm9mfvm-9ca76a52` is at `origin/master` (`d8bd207`) with a clean worktree. No source-code changes are required; all recent robustness fixes are already in `hart-domain-sync.sh` and `hart-domain-hook.sh`.
+- `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass.
+- QA runs the verification gate: manual dry-runs in directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, fast `--remove`, unquoted `#` in `CF_ENV`, and all common `Host()` rule styles (literal backticks, single quotes, double quotes, uppercase, backslash-escaped inner quotes in double-quoted YAML, and doubled single quotes in single-quoted YAML).
+- If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR; otherwise the objective is resolved and no further action is needed.
