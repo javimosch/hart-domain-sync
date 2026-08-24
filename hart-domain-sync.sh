@@ -446,7 +446,7 @@ def strip_comment(s):
                 in_quote = None
             out.append(c)
             continue
-        if c in ('"', "'"):
+        if c in ('"', "'", '`'):
             in_quote = c
             out.append(c)
             continue
@@ -477,9 +477,10 @@ for f in files:
     except OSError: continue
     owner = None
     for line in lines:
-        m = name_re.match(line)
+        cleaned = strip_comment(line)
+        m = name_re.match(cleaned)
         if m: owner = m.group(1); continue
-        m = rule_re.match(line)
+        m = rule_re.match(cleaned)
         if m and owner and not owner.startswith(prefix):
             rule = qstrip(strip_comment(m.group(1)))
             print("%s\t%s" % (rule, owner))
