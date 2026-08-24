@@ -1339,3 +1339,16 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
 - PR #158 is superseded and can be closed.
 - Closes #158
 - Relates-to #152
+
+## 2026-08-24 architect plan and final status (am-add074-dkx7ptbs2oor-86342530)
+
+- `gh issue list --state open` returns `[]`; no open GitHub issues remain to fix.
+- `gh pr list --state open` returns only PR #160 (`am/am-add074-dkx6v67bm88x-f1b04598`, `docs(agents): 2026-08-24 architect plan and final status`). It is stale and still open, so its claim that "no open PRs remain" is outdated. Its `AGENTS.md` additions are superseded by this run's fresh final status and should not be imported.
+- The current branch `am/am-add074-dkx7ptbs2oor-86342530` is at `origin/master` (`a3ba90d`) with a clean worktree. All recent robustness fixes are already present on `origin/master`.
+- `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass in this environment.
+- Plan:
+  1. Land this `docs(agents)` final-status entry as the only required change. Do not import the stale `AGENTS.md` plan from PR #160.
+  2. QA runs the verification gate: `bash -n hart-domain-sync.sh hart-domain-hook.sh`, `shellcheck hart-domain-sync.sh hart-domain-hook.sh` if available, and manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, fast `--remove`, `CF_ENV` values containing `#` under a non-C locale, and the escaped-quote edge cases.
+  3. If the gate passes, the objective is resolved and PR #160 can be closed as superseded. If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR.
+- Closes #160
+- Relates-to #158, #159
