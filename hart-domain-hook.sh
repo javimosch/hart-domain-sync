@@ -4,6 +4,8 @@
 # Dispatch remove events to the fast `--remove` path and everything else to a full reconcile.
 # All work runs in the background so the `hart domain` HTTP response returns immediately.
 
+set -uo pipefail
+
 trim() { printf '%s' "$1" | LC_ALL=C tr -d '\r' | LC_ALL=C sed 's/^[[:space:]]*//;s/[[:space:]]*$//'; }
 
 SYNC="$(trim "${HART_DOMAIN_SYNC:-/opt/hart/hart-domain-sync.sh}")"
