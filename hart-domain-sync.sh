@@ -259,9 +259,28 @@ try:
 except FileNotFoundError:
     print("0"); sys.exit(0)
 http_sections = ("routers", "services", "middlewares")
+
+def strip_comment(s):
+    in_quote = None
+    out = []
+    for c in s:
+        if in_quote:
+            if c == in_quote:
+                in_quote = None
+            out.append(c)
+            continue
+        if c in ('"', "'", '`'):
+            in_quote = c
+            out.append(c)
+            continue
+        if c == '#':
+            break
+        out.append(c)
+    return ''.join(out).rstrip()
+
 out, top, section, skip, changed = [], None, None, False, False
 for line in text.split("\n"):
-    t = line.strip()
+    t = strip_comment(line).strip()
     indent = len(line) - len(line.lstrip(" "))
     if indent == 0 and t and t.endswith(":"):
         top = t[:-1]
@@ -288,12 +307,12 @@ if not changed:
 # otherwise a fast remove of the last hart key leaves http: with bare routers:/services:.
 cleaned, i, n = [], 0, len(out)
 while i < n:
-    if out[i] == "http:":
+    if strip_comment(out[i]).strip() == "http:":
         start = i
         i += 1
         has_key = False
         while i < n and (out[i] == "" or out[i].startswith(" ") or out[i].startswith("\t")):
-            if re.match(r"^    [\w.-]+:\s*$", out[i]):
+            if re.match(r"^    [\w.-]+:\s*$", strip_comment(out[i]).rstrip()):
                 has_key = True
             i += 1
         if has_key:
