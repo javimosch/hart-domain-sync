@@ -1339,3 +1339,17 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
 - PR #158 is superseded and can be closed.
 - Closes #158
 - Relates-to #152
+
+## 2026-08-24 architect plan and final status (am-add074-dkx6v67bm88x-f1b04598)
+
+- `gh issue list --state open` returns `[]`; no open GitHub issues remain to fix.
+- `gh pr list --state open` returns `[]`; no open PRs remain. PR #158 (`am/am-add074-dkx4m0q30e5t-0f2ac62a`) is `CLOSED` and fully superseded by `origin/master`:
+  - its `LC_ALL=C` `strip_env_comment()` code change is in `f5c47b3` / PR #157,
+  - its `README.md` note about locale-independent `CF_ENV` parsing is in `a3ba90d` / PR #159.
+- The current branch `am-add074-dkx6v67bm88x-f1b04598` is at `origin/master` (`a3ba90d`) with a clean worktree. No source-code changes are required.
+- `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass in this environment.
+- Plan:
+  1. QA runs the verification gate: `bash -n hart-domain-sync.sh hart-domain-hook.sh`, `shellcheck hart-domain-sync.sh hart-domain-hook.sh` if available, and manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, fast `--remove`, unquoted `#` in `CF_ENV`, escaped-quote edge cases, and a non-C locale (`LC_ALL=en_US.UTF-8`).
+  2. If the gate passes, the objective is resolved and no further work is needed.
+  3. If QA finds a regression or uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR.
+- Relates-to #158, #159
