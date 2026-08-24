@@ -1316,3 +1316,13 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
     - confirm `PYCLAIM` and `PYMERGE` detect the rule correctly and `PYREM` removes by key correctly
 - If the gate passes, close PR #155 as superseded; if a regression is found, open a focused GitHub issue and produce one small conventional-commit PR.
 - Relates-to #152, #155
+
+## 2026-08-24 final status and supersede stale PR #155 (am-add074-dkx2tpcg2fxq-2664488f)
+
+- `gh issue list --state open` returns `[]`; no open GitHub issues remain to fix.
+- `gh pr list --state open` returns PR #155 (`am/am-add074-dkx1xjs5onct-fcccc8b3`, `docs(agents): 2026-08-24 final status and confirm no open issues`), which bundles a stale `AGENTS.md` final-status with the real unmerged `fix(sync)` edge case. It is superseded by the clean commits on this branch.
+- The current branch `am/am-add074-dkx2tpcg2fxq-2664488f` is at `origin/master` (`5d9863f`) plus the `docs(agents): 2026-08-24 plan for PR #155 escaped-quote edge case` plan commit and two clean commits: `fix(sync): preserve YAML escapes when stripping inline comments` and `docs(readme): document inline YAML comment and quote handling`. These make all three Python scanners (`PYREM`, `PYCLAIM`, `PYMERGE`) keep backslash-escaped quotes inside YAML double-quoted strings and doubled single quotes inside YAML single-quoted strings while still stripping unquoted inline comments.
+- `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass. Manual dry-runs in directory and file modes confirm the collision scanner and fast remove correctly handle router key lines with inline comments and rules containing escaped/doubled quotes.
+- The objective is resolved; PR #155 is superseded and can be closed.
+- Relates-to #152
+- Supersedes #155
