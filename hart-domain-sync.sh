@@ -183,7 +183,7 @@ fi
 # quotes, embedded spaces and any "=" inside the value, and shell-style trailing
 # comments outside of quoted strings.
 strip_env_comment() {
-  local s="$1" c in_quote="" out="" prev
+  local s="$1" c in_quote="" out="" prev LC_ALL=C
   for (( i=0; i<${#s}; i++ )); do
     c="${s:$i:1}"
     if [ -n "$in_quote" ]; then
