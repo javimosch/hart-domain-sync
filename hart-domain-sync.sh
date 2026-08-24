@@ -259,9 +259,29 @@ try:
 except FileNotFoundError:
     print("0"); sys.exit(0)
 http_sections = ("routers", "services", "middlewares")
+
+def strip_comment(s):
+    in_quote = None
+    out = []
+    for c in s:
+        if in_quote:
+            if c == in_quote:
+                in_quote = None
+            out.append(c)
+            continue
+        if c in ('"', "'"):
+            in_quote = c
+            out.append(c)
+            continue
+        if c == '#':
+            break
+        out.append(c)
+    return ''.join(out).rstrip()
+
 out, top, section, skip, changed = [], None, None, False, False
 for line in text.split("\n"):
-    t = line.strip()
+    raw = line.strip()
+    t = strip_comment(line).strip()
     indent = len(line) - len(line.lstrip(" "))
     if indent == 0 and t and t.endswith(":"):
         top = t[:-1]
@@ -288,12 +308,12 @@ if not changed:
 # otherwise a fast remove of the last hart key leaves http: with bare routers:/services:.
 cleaned, i, n = [], 0, len(out)
 while i < n:
-    if out[i] == "http:":
+    if strip_comment(out[i]).strip() == "http:":
         start = i
         i += 1
         has_key = False
         while i < n and (out[i] == "" or out[i].startswith(" ") or out[i].startswith("\t")):
-            if re.match(r"^    [\w.-]+:\s*$", out[i]):
+            if re.match(r"^    [\w.-]+:\s*$", strip_comment(out[i]).rstrip()):
                 has_key = True
             i += 1
         if has_key:
@@ -458,9 +478,10 @@ for f in files:
     except OSError: continue
     owner = None
     for line in lines:
-        m = name_re.match(line)
+        cleaned = strip_comment(line)
+        m = name_re.match(cleaned)
         if m: owner = m.group(1); continue
-        m = rule_re.match(line)
+        m = rule_re.match(cleaned)
         if m and owner and not owner.startswith(prefix):
             rule = qstrip(strip_comment(m.group(1)))
             print("%s\t%s" % (rule, owner))
@@ -681,8 +702,26 @@ def split_http(text):
         if rest_name:
             rest.append((rest_name, "\n".join(rest_buf).rstrip("\n") + "\n"))
         rest_name, rest_buf = None, []
+    def clean(s):
+        in_quote = None
+        out = []
+        for c in s:
+            if in_quote:
+                if c == in_quote:
+                    in_quote = None
+                out.append(c)
+                continue
+            if c in ('"', "'"):
+                in_quote = c
+                out.append(c)
+                continue
+            if c == '#':
+                break
+            out.append(c)
+        return ''.join(out).rstrip()
     for line in text.split("\n"):
-        t = line.strip()
+        raw = line.strip()
+        t = clean(line).strip()
         indent = len(line) - len(line.lstrip(" "))
         if indent == 0 and t and t.endswith(":"):
             flush(); flush_rest()
@@ -696,14 +735,14 @@ def split_http(text):
         if rest_name:
             rest_buf.append(line)
             continue
-        if section is None and t == "":
+        if section is None and raw == "":
             continue
         if indent == 2 and t.endswith(":") and not t.startswith("-"):
             flush(); section = t[:-1]; continue
         if section is None: continue
         if indent == 4 and t.endswith(":") and " " not in t:
             flush(); key = t[:-1]; buf = [line]; continue
-        if key and (indent > 4 or not t):
+        if key and (indent > 4 or not raw):
             buf.append(line)
     flush(); flush_rest()
     return out, rest
