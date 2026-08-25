@@ -1405,3 +1405,18 @@ PRs #2, #3, #4, and #6 were stale overlapping attempts at the same issue and hav
   3. If the gate passes, the objective is resolved and PR #163 can be closed as superseded. If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR.
 - Closes #163
 - Relates-to #162
+
+## 2026-08-25 final status and close stale PR #165 (am-add074-dkxuq8v430e2-51daec43)
+
+- `gh issue list --state open` returns `[]`; no open GitHub issues remain to fix.
+- `gh pr list --state open` returns only PR #165 (`am/am-add074-dkxtx5gno6ha-4e700b9f`, `docs(agents): 2026-08-25 final status and confirm no open issues`). It is stale and merge-conflicting:
+  - It was opened from `origin/master` (`25abe06`) and claims no open PRs remain, but it itself is still open, so its own final-status claim is outdated.
+  - Its `AGENTS.md` additions are superseded by this run's fresh final-status entry and should not be imported.
+- The current branch `am-add074-dkxuq8v430e2-51daec43` is at `origin/master` (`25abe06`) with a clean worktree. No source-code changes are required; all recent robustness fixes are already in `hart-domain-sync.sh` and `hart-domain-hook.sh`.
+- `bash -n hart-domain-sync.sh hart-domain-hook.sh` and `shellcheck hart-domain-sync.sh hart-domain-hook.sh` both pass in this environment.
+- Plan:
+  1. Land this `docs(agents)` final-status entry as the only required change. Do not import the stale `AGENTS.md` sections from PR #165.
+  2. QA runs the verification gate: `bash -n hart-domain-sync.sh hart-domain-hook.sh`, `shellcheck hart-domain-sync.sh hart-domain-hook.sh` if available, and manual dry-runs in both directory and file modes covering `WILDCARD_DOMAIN`, `WILDCARD_INSTANCE_DOMAIN`, mixed-case hart entries, fast `--remove`, `CF_ENV` values containing `#` under a non-C locale, and escaped-quote/inline-comment edge cases.
+  3. If the gate passes, the objective is resolved and PR #165 can be closed as superseded. If QA finds a regression or an uncovered edge case, open a focused GitHub issue and produce one small conventional-commit PR.
+- Closes #165
+- Relates-to #163, #162
